@@ -3,12 +3,22 @@ import { DamageAnalysis, DamageSeverity, DebrisType, HomeType, Detection } from 
 
 let anthropicClient: Anthropic | null = null;
 
+// Auto-initialize from environment variable if available
+const envApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+if (envApiKey) {
+  anthropicClient = new Anthropic({ apiKey: envApiKey, dangerouslyAllowBrowser: true });
+}
+
 export function initializeClaude(apiKey: string): void {
   anthropicClient = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 
 export function isClaudeInitialized(): boolean {
   return anthropicClient !== null;
+}
+
+export function getApiKeyFromEnv(): string | undefined {
+  return import.meta.env.VITE_ANTHROPIC_API_KEY;
 }
 
 const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector. Your job is to provide ACCURATE, CONSERVATIVE damage assessments.

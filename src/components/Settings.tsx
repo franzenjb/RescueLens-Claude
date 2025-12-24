@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, User, Mail, Save, CheckCircle2, AlertCircle, Trash2, Download, Shield } from 'lucide-react';
-import { initializeClaude, isClaudeInitialized } from '../services/claudeService';
+import { initializeClaude, isClaudeInitialized, getApiKeyFromEnv } from '../services/claudeService';
 import { getSettings, saveSettings, clearAllReports } from '../services/storageService';
 import { AppSettings } from '../types';
 
@@ -19,9 +19,15 @@ export const Settings: React.FC<SettingsProps> = ({ onExport, reportCount }) => 
   const [error, setError] = useState<string | null>(null);
   const [claudeReady, setClaudeReady] = useState(false);
 
+  const envKey = getApiKeyFromEnv();
+
   useEffect(() => {
     loadSettings();
     setClaudeReady(isClaudeInitialized());
+    // If env key exists, show masked version
+    if (envKey) {
+      setApiKey('sk-ant-...loaded from .env');
+    }
   }, []);
 
   const loadSettings = async () => {
