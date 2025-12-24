@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Trash2, MapPin, Calendar, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Building2 } from 'lucide-react';
+import { Trash2, MapPin, Calendar, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, Building2, FileText, Download } from 'lucide-react';
 import { DamageReport, DamageSeverity } from '../types';
+import { exportCaseReport, generateSampleClientInfo } from '../services/pdfService';
 
 interface HistoryViewProps {
   reports: DamageReport[];
@@ -158,8 +159,24 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, expanded, onToggle, onD
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // Add sample client info if not present
+              const reportWithClient = {
+                ...report,
+                clientInfo: report.clientInfo?.name ? report.clientInfo : generateSampleClientInfo(),
+              };
+              exportCaseReport(reportWithClient);
+            }}
+            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            title="Export Case Report PDF"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            title="Delete Report"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -237,6 +254,21 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, expanded, onToggle, onD
               </ul>
             </div>
           )}
+
+          {/* Export Button */}
+          <button
+            onClick={() => {
+              const reportWithClient = {
+                ...report,
+                clientInfo: report.clientInfo?.name ? report.clientInfo : generateSampleClientInfo(),
+              };
+              exportCaseReport(reportWithClient);
+            }}
+            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export Case Report PDF
+          </button>
 
           {/* Meta */}
           <div className="flex items-center justify-between text-[10px] text-slate-600 pt-2 border-t border-slate-800">
