@@ -9,7 +9,6 @@ import { ToolSplash, shouldShowSplash } from './components/ToolSplash';
 import { AboutView } from './tools/about';
 import { CrisisConnectView } from './tools/crisisconnect';
 import { LidarView } from './tools/lidar';
-import { LidarViewerTool } from './tools/lidar-viewer';
 import { useReports } from './hooks/useReports';
 import { initializeClaude } from './services/claudeService';
 import { getSettings } from './services/storageService';
@@ -99,9 +98,6 @@ function App() {
 
       case 'lidar':
         return <LidarView />;
-
-      case 'lidar-viewer':
-        return <LidarViewerTool />;
 
       default:
         return <AboutView onSelectTool={handleToolChange} />;

@@ -1,4 +1,4 @@
-import { Camera, Phone, Radar, Info, LucideIcon, Box } from 'lucide-react';
+import { Camera, Phone, Radar, Info, LucideIcon } from 'lucide-react';
 
 export interface ToolConfig {
   id: string;
@@ -76,28 +76,6 @@ export const tools: ToolConfig[] = [
         'Debris volume estimation',
         'Access route identification',
         'Resource deployment planning',
-      ],
-      videoUrl: undefined,
-    },
-  },
-  {
-    id: 'lidar-viewer',
-    name: 'LiDAR 3D Viewer',
-    shortName: 'Point Cloud',
-    description: 'Interactive 3D point cloud visualization showing DJI L3 LiDAR output for post-disaster structural assessment.',
-    icon: Box,
-    color: '#0891b2',
-    gradient: 'from-cyan-600 to-cyan-800',
-    splash: {
-      title: 'LiDAR 3D Viewer',
-      subtitle: 'DJI L3 Point Cloud Demo',
-      features: [
-        'Real-time 3D point cloud visualization',
-        'Works in complete darkness',
-        'Penetrates smoke and dust',
-        'Assesses areas inaccessible by road',
-        'Automated damage classification',
-        '360° structural integrity view',
       ],
       videoUrl: undefined,
     },

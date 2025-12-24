@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Radar, Play, Presentation, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Radar, Play, Presentation, Video, Globe2 } from 'lucide-react';
 import { lidarSlides } from './slides';
+import { LidarViewerTool } from '../lidar-viewer';
 
-type ViewMode = 'slideshow' | 'overview-video' | 'tiktok';
+type ViewMode = 'slideshow' | 'overview-video' | 'tiktok' | '3d-globe';
 
 export const LidarView: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('slideshow');
@@ -104,6 +105,18 @@ export const LidarView: React.FC = () => {
               <Play className="w-3.5 h-3.5" />
               TikTok Demo
             </button>
+            <button
+              onClick={() => setViewMode('3d-globe')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === '3d-globe'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="3D Globe view with satellite imagery (Demo)"
+            >
+              <Globe2 className="w-3.5 h-3.5" />
+              3D Globe
+            </button>
           </div>
 
           {viewMode === 'slideshow' && (
@@ -184,8 +197,12 @@ export const LidarView: React.FC = () => {
         </>
       ) : viewMode === 'overview-video' ? (
         <OverviewVideo />
-      ) : (
+      ) : viewMode === 'tiktok' ? (
         <TikTokVideo />
+      ) : (
+        <div className="flex-1 relative">
+          <LidarViewerTool />
+        </div>
       )}
     </div>
   );
