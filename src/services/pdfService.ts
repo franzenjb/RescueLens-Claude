@@ -138,13 +138,43 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
   // ========== IMAGE ==========
   if (report.imageData) {
     try {
-      const imgWidth = 80;
-      const imgHeight = 60;
-      doc.addImage(report.imageData, 'JPEG', margin, yPos, imgWidth, imgHeight);
+      // Get actual image dimensions to preserve aspect ratio
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = report.imageData!;
+      });
 
-      // Summary box next to image
+      const originalWidth = img.naturalWidth;
+      const originalHeight = img.naturalHeight;
+      const aspectRatio = originalWidth / originalHeight;
+
+      // Max dimensions for the image in the PDF
+      const maxImgWidth = 80;
+      const maxImgHeight = 70;
+
+      // Calculate dimensions preserving aspect ratio
+      let imgWidth: number;
+      let imgHeight: number;
+
+      if (aspectRatio > maxImgWidth / maxImgHeight) {
+        // Image is wider - constrain by width
+        imgWidth = maxImgWidth;
+        imgHeight = maxImgWidth / aspectRatio;
+      } else {
+        // Image is taller - constrain by height
+        imgHeight = maxImgHeight;
+        imgWidth = maxImgHeight * aspectRatio;
+      }
+
+      // Use PNG format for better quality (JPEG can introduce artifacts)
+      doc.addImage(report.imageData, 'PNG', margin, yPos, imgWidth, imgHeight);
+
+      // Summary box next to image (use the larger height for consistent layout)
+      const boxHeight = Math.max(imgHeight, 50);
       doc.setFillColor(250, 250, 250);
-      doc.rect(margin + imgWidth + 5, yPos, contentWidth - imgWidth - 5, imgHeight, 'F');
+      doc.rect(margin + imgWidth + 5, yPos, contentWidth - imgWidth - 5, boxHeight, 'F');
 
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -157,7 +187,7 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
       const summaryText = report.analysis?.summary || 'No summary available';
       addWrappedText(summaryText, margin + imgWidth + 10, yPos + 16, contentWidth - imgWidth - 20, 4);
 
-      yPos += imgHeight + 8;
+      yPos += boxHeight + 8;
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       yPos += 10;

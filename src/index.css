@@ -34,6 +34,12 @@ body {
   background: #475569;
 }
 
+/* Image sharpening */
+img, video {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
 /* Animation utilities */
 @keyframes fade-in {
   from { opacity: 0; }

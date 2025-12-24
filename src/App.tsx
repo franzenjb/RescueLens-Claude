@@ -5,12 +5,22 @@ import { HistoryView } from './components/HistoryView';
 import { Dashboard } from './components/Dashboard';
 import { MapView } from './components/MapView';
 import { Settings } from './components/Settings';
+import { ToolSplash, shouldShowSplash } from './components/ToolSplash';
+import { AboutView } from './tools/about';
+import { CrisisConnectView } from './tools/crisisconnect';
+import { LidarView } from './tools/lidar';
+import { LidarViewerTool } from './tools/lidar-viewer';
 import { useReports } from './hooks/useReports';
 import { initializeClaude } from './services/claudeService';
 import { getSettings } from './services/storageService';
+import { tools, getToolById } from './tools/registry';
 
 function App() {
+  const [activeTool, setActiveTool] = useState('about');
   const [activeTab, setActiveTab] = useState('analyze');
+  const [showSplash, setShowSplash] = useState(false);
+  const [pendingTool, setPendingTool] = useState<string | null>(null);
+
   const {
     reports,
     loading,
@@ -35,6 +45,30 @@ function App() {
     init();
   }, []);
 
+  const handleToolChange = (toolId: string) => {
+    // About doesn't need splash
+    if (toolId === 'about') {
+      setActiveTool(toolId);
+      return;
+    }
+
+    // Check if we should show splash
+    if (shouldShowSplash(toolId)) {
+      setPendingTool(toolId);
+      setShowSplash(true);
+    } else {
+      setActiveTool(toolId);
+    }
+  };
+
+  const handleSplashContinue = () => {
+    if (pendingTool) {
+      setActiveTool(pendingTool);
+      setPendingTool(null);
+    }
+    setShowSplash(false);
+  };
+
   const handleImport = async (file: File) => {
     try {
       const count = await importData(file);
@@ -44,8 +78,8 @@ function App() {
     }
   };
 
-  const renderContent = () => {
-    if (loading) {
+  const renderToolContent = () => {
+    if (loading && activeTool === 'rescuelens') {
       return (
         <div className="flex items-center justify-center h-96">
           <div className="text-slate-500">Loading...</div>
@@ -53,6 +87,28 @@ function App() {
       );
     }
 
+    switch (activeTool) {
+      case 'about':
+        return <AboutView onSelectTool={handleToolChange} />;
+
+      case 'rescuelens':
+        return renderRescueLensContent();
+
+      case 'crisisconnect':
+        return <CrisisConnectView />;
+
+      case 'lidar':
+        return <LidarView />;
+
+      case 'lidar-viewer':
+        return <LidarViewerTool />;
+
+      default:
+        return <AboutView onSelectTool={handleToolChange} />;
+    }
+  };
+
+  const renderRescueLensContent = () => {
     switch (activeTab) {
       case 'analyze':
         return <Analyzer onReportCreated={addReport} />;
@@ -69,16 +125,31 @@ function App() {
     }
   };
 
+  // Get the current tool for splash screen
+  const currentTool = pendingTool ? getToolById(pendingTool) : null;
+
   return (
-    <Layout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onExport={exportData}
-      onImport={handleImport}
-      reportCount={reports.length}
-    >
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout
+        activeTool={activeTool}
+        activeTab={activeTab}
+        onToolChange={handleToolChange}
+        onTabChange={setActiveTab}
+        onExport={exportData}
+        onImport={handleImport}
+        reportCount={reports.length}
+      >
+        {renderToolContent()}
+      </Layout>
+
+      {/* Splash Screen */}
+      {showSplash && currentTool && (
+        <ToolSplash
+          tool={currentTool}
+          onContinue={handleSplashContinue}
+        />
+      )}
+    </>
   );
 }
 

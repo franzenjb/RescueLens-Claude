@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2, X, CheckCircle2, AlertCircle, Upload, Sparkles, Building2, Shield, Info, ArrowRight } from 'lucide-react';
+import { Camera, Loader2, X, CheckCircle2, AlertCircle, Upload, Sparkles, Building2, Shield, Info, ArrowRight, ChevronDown, ImageIcon, BookOpen } from 'lucide-react';
 import { analyzeImage, compressImage, isClaudeInitialized } from '../services/claudeService';
 import { DamageReport, DamageSeverity, Location } from '../types';
+import { SAMPLE_IMAGES, SampleImage } from '../data/sampleImages';
 
 interface AnalyzerProps {
   onReportCreated: (report: Omit<DamageReport, 'id' | 'createdAt' | 'updatedAt'>) => Promise<DamageReport>;
@@ -41,7 +42,31 @@ const generateLocation = (): Location => {
 export const Analyzer: React.FC<AnalyzerProps> = ({ onReportCreated }) => {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [showSamples, setShowSamples] = useState(false);
+  const [loadingSample, setLoadingSample] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load a sample image into the queue
+  const loadSampleImage = async (sample: SampleImage) => {
+    setLoadingSample(sample.id);
+    try {
+      const response = await fetch(sample.url);
+      const blob = await response.blob();
+      const file = new File([blob], sample.filename, { type: blob.type });
+
+      const newItem: QueueItem = {
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        file,
+        preview: URL.createObjectURL(blob),
+        status: 'pending',
+      };
+      setQueue(prev => [...prev, newItem]);
+    } catch (err) {
+      console.error('Failed to load sample image:', err);
+    } finally {
+      setLoadingSample(null);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -160,6 +185,51 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onReportCreated }) => {
                 <p>Review FEMA PDA classification and save report</p>
               </div>
             </div>
+          </div>
+
+          {/* Sample Images Gallery */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowSamples(!showSamples)}
+              className="w-full flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-400" />
+                <span className="text-xs font-bold text-slate-300">Try FEMA Sample Images</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showSamples ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showSamples && (
+              <div className="mt-3 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">
+                  Click any image to test AI classification
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {SAMPLE_IMAGES.map(sample => (
+                    <button
+                      key={sample.id}
+                      onClick={() => loadSampleImage(sample)}
+                      disabled={loadingSample === sample.id}
+                      className="relative group rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all aspect-square"
+                    >
+                      <img
+                        src={sample.url}
+                        alt="Sample"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        {loadingSample === sample.id ? (
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Upload Button */}
@@ -299,11 +369,11 @@ const ResultCard: React.FC<{ item: QueueItem }> = ({ item }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row">
-        <div className="md:w-64 shrink-0">
+        <div className="md:w-96 shrink-0 bg-black flex items-center justify-center">
           <img
             src={item.preview}
             alt="Damage"
-            className="w-full h-48 md:h-full object-cover"
+            className="w-full h-64 md:h-80 object-contain"
           />
         </div>
         <div className="flex-1 p-6 space-y-4">
