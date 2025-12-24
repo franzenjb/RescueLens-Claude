@@ -163,12 +163,25 @@ In your pdaJustification, you MUST state:
       throw new Error('No text response from Claude');
     }
 
-    // Parse JSON response
+    // Parse JSON response - handle various formats Claude might return
     let jsonStr = textContent.text.trim();
 
     // Handle markdown code blocks if present
-    if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```$/g, '').trim();
+    if (jsonStr.includes('```')) {
+      const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) {
+        jsonStr = match[1].trim();
+      }
+    }
+
+    // If response doesn't start with {, try to find JSON object in the text
+    if (!jsonStr.startsWith('{')) {
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      } else {
+        throw new Error('No valid JSON found in Claude response');
+      }
     }
 
     const parsed = JSON.parse(jsonStr);
