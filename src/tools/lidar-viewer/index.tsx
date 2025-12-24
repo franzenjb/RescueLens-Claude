@@ -267,7 +267,6 @@ export function LidarViewerTool() {
         vrButton={false}
         infoBox={false}
         selectionIndicator={false}
-        imageryProvider={false}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       >
         {/* Satellite imagery layer */}
