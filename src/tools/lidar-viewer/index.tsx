@@ -181,8 +181,9 @@ export function LidarViewerTool() {
           </div>
           <div>
             <span className="text-white font-semibold text-lg drop-shadow">3D Globe View</span>
-            <div className="text-white/70 text-sm drop-shadow">
-              Satellite imagery with damage markers
+            <div className="text-white/70 text-sm drop-shadow flex items-center gap-2">
+              <span className="bg-amber-500/80 text-white text-xs px-2 py-0.5 rounded font-medium">DEMO</span>
+              Sample imagery • LiDAR integration in progress
             </div>
           </div>
         </div>
@@ -362,6 +363,9 @@ export function LidarViewerTool() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/20">
+            <div className="text-xs text-amber-400/80 font-medium mb-1">
+              Simulated data for demo
+            </div>
             <div className="text-xs text-white/50">
               Imagery: Esri World Imagery
             </div>
@@ -383,9 +387,9 @@ export function LidarViewerTool() {
 
       {/* Attribution */}
       <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur rounded-lg px-3 py-2 shadow-lg z-10">
-        <div className="text-xs text-gray-400">3D GLOBE VIEW</div>
-        <div className="text-white font-medium">CesiumJS</div>
-        <div className="text-xs text-cyan-400">Real satellite imagery • Live tiles</div>
+        <div className="text-xs text-amber-400 font-medium">PROTOTYPE DEMO</div>
+        <div className="text-white font-medium">CesiumJS + Esri Imagery</div>
+        <div className="text-xs text-gray-400">LiDAR point cloud integration coming soon</div>
       </div>
     </div>
   );
