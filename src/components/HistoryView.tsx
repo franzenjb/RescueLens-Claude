@@ -168,10 +168,11 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, expanded, onToggle, onD
               };
               exportCaseReport(reportWithClient);
             }}
-            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            className="px-2 py-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
             title="Export Case Report PDF"
           >
-            <FileText className="w-4 h-4" />
+            <Download className="w-3 h-3" />
+            PDF
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

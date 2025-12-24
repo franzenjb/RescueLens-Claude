@@ -228,9 +228,19 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
   doc.text(`Generated: ${new Date().toLocaleString()} | RescueLens AI Assessment Tool`, margin, footerY + 4);
   doc.text(`Page 1 of 1`, pageWidth - margin - 20, footerY);
 
-  // Save the PDF
+  // Save the PDF with proper filename
   const filename = `ARC_Case_${report.id}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(filename);
+
+  // Use blob approach for better browser compatibility with filenames
+  const pdfBlob = doc.output('blob');
+  const url = URL.createObjectURL(pdfBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // Generate a complete case with sample client data
