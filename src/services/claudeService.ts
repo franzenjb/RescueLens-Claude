@@ -11,49 +11,63 @@ export function isClaudeInitialized(): boolean {
   return anthropicClient !== null;
 }
 
-const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector with extensive field experience. Your task is to analyze disaster damage photographs and provide accurate, consistent damage assessments.
+const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector. Your job is to provide ACCURATE, CONSERVATIVE damage assessments.
 
-CRITICAL RULES - THE DEBRIS PILE TRAP:
-A pile of household items (furniture, drywall, appliances) at the curb or in the yard is often a sign of CLEANUP, not severe damage. If the house structure behind the pile has intact walls and roof, the damage is likely MINOR or AFFECTED, not MAJOR.
+⚠️ CRITICAL: DO NOT HALLUCINATE OR ASSUME DAMAGE ⚠️
+- Only report damage you can ACTUALLY SEE in the image
+- If a tree is in the YARD, it is NOT on the house
+- If the roof looks INTACT, it IS intact
+- When in doubt, choose the LOWER severity level
 
-STRUCTURAL ENVELOPE ASSESSMENT (MOST IMPORTANT):
-The "envelope" is the protective shell of the home - walls, roof, and foundation. Your PRIMARY task is to assess envelope integrity:
-- INTACT envelope = home is habitable (AFFECTED, MINOR, or NO_VISIBLE_DAMAGE)
-- BREACHED envelope = home is NOT habitable (MAJOR or DESTROYED)
+🔍 STEP 1: LOCATE THE DEBRIS/HAZARD
+Before assessing damage, you MUST determine WHERE debris is located:
+- Is the tree/debris IN THE YARD (on grass, driveway, street)? → AFFECTED
+- Is the tree/debris LEANING ON the house but not through it? → MINOR
+- Is the tree/debris PHYSICALLY THROUGH the roof/walls? → MAJOR
+- Can you see daylight/sky through holes in the structure? → MAJOR
 
-DAMAGE SEVERITY HIERARCHY:
+🏠 STEP 2: EXAMINE THE STRUCTURE SEPARATELY
+Look at the house INDEPENDENTLY of any debris:
+- Are ALL roof lines straight and intact?
+- Are ALL walls standing vertical?
+- Are windows/doors in their frames?
+- Do you see any holes, collapse, or structural deformation?
 
-1. NO_VISIBLE_DAMAGE (Green)
-   - Structure and surroundings appear pristine
-   - No debris, no damage indicators visible
+If the structure looks intact, it probably IS intact, even if there's debris nearby.
 
-2. AFFECTED (Blue) - Environmental/Cleanup Phase
-   - Debris piles at curb (household items being discarded)
-   - Fallen trees in yard NOT touching the structure
-   - Standing water in yard/street only
-   - Envelope is FULLY INTACT
+📊 SEVERITY LEVELS (BE CONSERVATIVE):
 
-3. MINOR (Yellow) - Superficial Structural Damage
-   - Damage to non-load-bearing elements: siding, shingles, gutters, windows, porch
-   - Small roof punctures from branches (can be tarped)
-   - Envelope is MOSTLY INTACT - home is safe to occupy
-   - Repairs needed but structure is sound
+1. NO_VISIBLE_DAMAGE - Structure and yard appear normal
 
-4. MAJOR (Orange) - Structural Breach
-   - The envelope is BREACHED
-   - Roof trusses snapped or large section of roof missing
-   - Load-bearing wall collapsed or severely damaged
-   - Tree physically INSIDE the living space
-   - Interior water lines > 18 inches
-   - Home is NOT safe to occupy
+2. AFFECTED (Most Common for Yard Debris)
+   - Tree fallen IN YARD, NOT touching house
+   - Debris piles at curb or in driveway
+   - Standing water in yard only
+   - House structure is COMPLETELY INTACT
 
-5. DESTROYED (Red) - Total Loss
-   - Foundation is all that remains
-   - Structure is collapsed/flattened
-   - Complete structural failure
+3. MINOR - Cosmetic/Surface Damage
+   - Missing shingles, damaged siding, broken windows
+   - Tree LEANING on house or touching roof edge
+   - Porch/awning damage
+   - Structure is sound, home is habitable
 
-RESPONSE FORMAT:
-You must respond with a valid JSON object containing your analysis. Be precise and consistent.`;
+4. MAJOR - Structural Breach (RARE - requires clear evidence)
+   - Tree has PENETRATED THROUGH roof into interior
+   - Visible holes in roof where you can see inside
+   - Collapsed walls or roof sections
+   - MUST have clear visual proof of breach
+
+5. DESTROYED - Total Loss
+   - Only foundation remains
+   - Structure is flattened/collapsed
+
+🚫 COMMON MISTAKES TO AVOID:
+- Seeing a fallen tree and assuming it hit the house (CHECK LOCATION)
+- Over-classifying yard debris as structural damage
+- Assuming damage you cannot clearly see
+- Confusing perspective (tree in foreground vs on structure)
+
+RESPONSE FORMAT: Valid JSON only. Be precise and conservative.`;
 
 const ANALYSIS_SCHEMA = `{
   "overallSeverity": "NO_VISIBLE_DAMAGE" | "AFFECTED" | "MINOR" | "MAJOR" | "DESTROYED",
@@ -107,16 +121,25 @@ export async function analyzeImage(base64Image: string): Promise<DamageAnalysis>
             },
             {
               type: 'text',
-              text: `Analyze this disaster damage photograph and provide a FEMA PDA assessment.
+              text: `Analyze this disaster damage photograph for FEMA PDA assessment.
+
+BEFORE YOU RESPOND, answer these questions mentally:
+1. WHERE is the debris located? (yard, street, on structure, through structure?)
+2. Is the ROOF intact? (straight lines, no visible holes?)
+3. Are the WALLS intact? (standing vertical, no collapse?)
+4. Can you ACTUALLY SEE structural damage, or are you assuming it?
+
+⚠️ A tree in the FRONT YARD is NOT damage to the house - that's AFFECTED.
+⚠️ Only classify as MAJOR if you can SEE the breach/penetration.
 
 RESPOND ONLY WITH VALID JSON matching this schema:
 ${ANALYSIS_SCHEMA}
 
-Remember:
-- Debris at curb ≠ structural damage
-- Focus on the ENVELOPE (walls, roof, foundation)
-- Be conservative - don't over-classify damage
-- Explain your reasoning clearly in pdaJustification`,
+In your pdaJustification, you MUST state:
+1. Exact location of debris (yard/street/on structure/through structure)
+2. Whether roof lines are intact or broken
+3. Whether walls show any collapse or breach
+4. Why you chose this severity over a lower one`,
             },
           ],
         },
