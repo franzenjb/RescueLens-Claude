@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Radar, Play, Presentation, Video, Globe2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Radar, Play, Presentation, Globe2 } from 'lucide-react';
 import { lidarSlides } from './slides';
 import { LidarViewerTool } from '../lidar-viewer';
 
-type ViewMode = 'slideshow' | 'overview-video' | 'tiktok' | '3d-globe';
+type ViewMode = 'slideshow' | 'tiktok' | '3d-globe';
 
 export const LidarView: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('slideshow');
@@ -80,18 +80,6 @@ export const LidarView: React.FC = () => {
             >
               <Presentation className="w-3.5 h-3.5" />
               Presentation
-            </button>
-            <button
-              onClick={() => setViewMode('overview-video')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                viewMode === 'overview-video'
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="AI-generated overview of LiDAR technology for disaster response"
-            >
-              <Video className="w-3.5 h-3.5" />
-              Overview
             </button>
             <button
               onClick={() => setViewMode('tiktok')}
@@ -195,8 +183,6 @@ export const LidarView: React.FC = () => {
             </p>
           </div>
         </>
-      ) : viewMode === 'overview-video' ? (
-        <OverviewVideo />
       ) : viewMode === 'tiktok' ? (
         <TikTokVideo />
       ) : (
@@ -204,34 +190,6 @@ export const LidarView: React.FC = () => {
           <LidarViewerTool />
         </div>
       )}
-    </div>
-  );
-};
-
-const OverviewVideo: React.FC = () => {
-  return (
-    <div className="flex-1 overflow-auto bg-black flex flex-col">
-      {/* Video Header */}
-      <div className="bg-slate-900 border-b border-slate-800 p-4">
-        <h3 className="text-lg font-bold text-white">LiDAR & Disaster Response Overview</h3>
-        <p className="text-sm text-slate-400 mt-1">
-          AI-generated video summarizing how aerial LiDAR technology transforms disaster assessment
-          and response operations, enabling 24/7 situational awareness.
-        </p>
-      </div>
-
-      {/* Video Player - Full Size */}
-      <div className="flex-1 flex items-center justify-center bg-black p-4">
-        <video
-          controls
-          className="max-h-full max-w-full rounded-lg"
-          poster="/slides/slide-01.png"
-          style={{ maxHeight: 'calc(100vh - 280px)' }}
-        >
-          <source src="/slides/lidar-video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>
     </div>
   );
 };
