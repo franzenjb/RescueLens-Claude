@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 // Google Maps API Key for Photorealistic 3D Tiles
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0BIxrrRzbIrfXkoHjId_EDpelwE4yuco';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
 // Increase concurrent tile requests for faster loading
 if (typeof RequestScheduler !== 'undefined') {
