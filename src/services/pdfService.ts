@@ -26,7 +26,7 @@ function generateNarrative(report: DamageReport): string {
   const narratives: Record<DamageSeverity, string> = {
     [DamageSeverity.NO_VISIBLE_DAMAGE]: `${clientName} reported concerns following the recent storm event affecting ${address}. Upon field assessment, the ${homeType} structure showed no visible damage. All structural components including roof, walls, and foundation appear intact. The property perimeter was inspected and found to be clear of hazardous debris. ${clientName} was provided with disaster preparedness materials and contact information for future assistance if needed.`,
 
-    [DamageSeverity.AFFECTED]: `${clientName} contacted the Red Cross following storm damage at ${address}. Field assessment revealed the ${homeType} structure remains structurally sound with the building envelope fully intact. However, significant debris was observed in the yard/driveway area requiring cleanup assistance. ${clientName} confirmed the interior of the home was not compromised. A Clean-Up Kit was provided along with information about debris removal services. The family is able to safely remain in the home during cleanup operations.`,
+    [DamageSeverity.AFFECTED]: `${clientName} contacted disaster services following storm damage at ${address}. Field assessment revealed the ${homeType} structure remains structurally sound with the building envelope fully intact. However, significant debris was observed in the yard/driveway area requiring cleanup assistance. ${clientName} confirmed the interior of the home was not compromised. A Clean-Up Kit was provided along with information about debris removal services. The family is able to safely remain in the home during cleanup operations.`,
 
     [DamageSeverity.MINOR]: `${clientName} reported damage to their ${homeType} residence at ${address} following severe weather. Assessment revealed minor structural damage including damage to exterior surfaces (siding, shingles, or windows). The building envelope has minor breaches but remains largely intact. The home is habitable with temporary repairs. Emergency tarping/boarding was coordinated to prevent further weather infiltration. ${clientName} was provided with contractor referrals and information about disaster assistance programs. Follow-up scheduled in 72 hours.`,
 
@@ -72,7 +72,7 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
 
   // ========== HEADER ==========
   // Red banner
-  doc.setFillColor(237, 27, 46); // Red Cross red
+  doc.setFillColor(237, 27, 46); // Brand red
   doc.rect(0, 0, pageWidth, 35, 'F');
 
   // Title
@@ -130,7 +130,7 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
 
   doc.setFont('helvetica', 'normal');
   doc.text(`Name: ${report.clientInfo?.caseworker || 'Field Team'}`, margin + contentWidth/2 + 5, yPos + 16);
-  doc.text(`Email: ${report.clientInfo?.caseworkerEmail || 'disaster.services@redcross.org'}`, margin + contentWidth/2 + 5, yPos + 22);
+  doc.text(`Email: ${report.clientInfo?.caseworkerEmail || 'disaster.services@example.org'}`, margin + contentWidth/2 + 5, yPos + 22);
   doc.text(`Assessment Date: ${new Date(report.createdAt).toLocaleString()}`, margin + contentWidth/2 + 5, yPos + 28);
 
   yPos += 38;
@@ -254,7 +254,7 @@ export async function exportCaseReport(report: DamageReport): Promise<void> {
 
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(7);
-  doc.text('American Red Cross | Disaster Services | Confidential Client Record', margin, footerY);
+  doc.text('Disaster Services | Confidential Client Record', margin, footerY);
   doc.text(`Generated: ${new Date().toLocaleString()} | RescueLens AI Assessment Tool`, margin, footerY + 4);
   doc.text(`Page 1 of 1`, pageWidth - margin - 20, footerY);
 
@@ -283,10 +283,10 @@ export function generateSampleClientInfo(): {
   const firstNames = ['Sarah', 'Michael', 'Jennifer', 'Robert', 'Maria', 'James', 'Linda', 'William', 'Patricia', 'David'];
   const lastNames = ['Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Anderson'];
   const caseworkers = [
-    { name: 'Jeff Franzen', email: 'jeff.franzen@redcross.org' },
-    { name: 'Maria Garcia', email: 'maria.garcia@redcross.org' },
-    { name: 'Steve Thompson', email: 'steve.thompson@redcross.org' },
-    { name: 'Diana Chen', email: 'diana.chen@redcross.org' },
+    { name: 'Jeff Franzen', email: 'jeff.franzen@example.org' },
+    { name: 'Maria Garcia', email: 'maria.garcia@example.org' },
+    { name: 'Steve Thompson', email: 'steve.thompson@example.org' },
+    { name: 'Diana Chen', email: 'diana.chen@example.org' },
   ];
 
   const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];

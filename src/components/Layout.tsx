@@ -39,7 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-      {/* Top Header - Red Cross Branding */}
+      {/* Top Header */}
       <header className="bg-[#ce1126] text-white">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -53,10 +53,10 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
               <div className="text-left">
                 <h1 className="text-lg font-black tracking-tight">
-                  Red Cross Innovation Suite
+                  Disaster Response Innovation Suite
                 </h1>
                 <p className="text-[10px] text-white/70 font-medium tracking-widest uppercase">
-                  Disaster Response Technology
+                  AI-Powered Emergency Tools
                 </p>
               </div>
             </button>
@@ -138,7 +138,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <footer className="border-t border-slate-800 py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-xs text-slate-600">
-            American Red Cross Innovation Suite | Disaster Response Technology
+            Disaster Response Innovation Suite | AI-Powered Emergency Tools
           </p>
         </div>
       </footer>

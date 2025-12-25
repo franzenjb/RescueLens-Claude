@@ -180,7 +180,7 @@ export const Settings: React.FC<SettingsProps> = ({ onExport, reportCount }) => 
               type="email"
               value={settings.defaultCaseworkerEmail || ''}
               onChange={(e) => setSettings({ ...settings, defaultCaseworkerEmail: e.target.value })}
-              placeholder="jeff.franzen@redcross.org"
+              placeholder="jeff.franzen@example.org"
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-sm"
             />
           </div>
@@ -255,7 +255,7 @@ export const Settings: React.FC<SettingsProps> = ({ onExport, reportCount }) => 
         </h2>
         <p className="text-sm text-slate-400 leading-relaxed">
           RescueLens is a disaster damage assessment tool powered by Claude AI.
-          It helps Red Cross volunteers and emergency responders quickly classify
+          It helps disaster response volunteers and emergency responders quickly classify
           property damage using FEMA PDA guidelines.
         </p>
         <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">

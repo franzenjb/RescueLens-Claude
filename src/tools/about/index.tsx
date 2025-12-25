@@ -13,7 +13,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onSelectTool }) => {
       <div className="text-center py-12 px-4">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-full border border-red-500/20 mb-6">
           <Shield className="w-4 h-4 text-red-500" />
-          <span className="text-xs font-bold text-red-400 uppercase tracking-widest">American Red Cross</span>
+          <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Disaster Response</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
           Innovation Suite
@@ -65,7 +65,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onSelectTool }) => {
         {/* Footer */}
         <div className="mt-16 text-center">
           <p className="text-xs text-slate-600 uppercase tracking-widest">
-            Red Cross Disaster Response Innovation Lab
+            Disaster Response Innovation Lab
           </p>
         </div>
       </div>
