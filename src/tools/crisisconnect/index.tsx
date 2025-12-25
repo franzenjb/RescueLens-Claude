@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ExternalLink, Loader2, AlertCircle, Maximize2, Minimize2, Phone, Presentation, Video, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ExternalLink, Loader2, AlertCircle, Maximize2, Minimize2, Phone, Presentation, Video, ChevronLeft, ChevronRight, Play, Mic, FileDown } from 'lucide-react';
 import { CRISISCONNECT_URL } from '../registry';
 import { crisisConnectSlides } from './slides';
+import { GeminiLive } from './GeminiLive';
 
-type ViewMode = 'live' | 'presentation' | 'video';
+type ViewMode = 'live' | 'presentation' | 'video' | 'voice';
 
 export const CrisisConnectView: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('live');
@@ -88,6 +89,16 @@ export const CrisisConnectView: React.FC = () => {
               <Video className="w-3.5 h-3.5" />
               Video
             </button>
+            <button
+              onClick={() => setViewMode('voice')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === 'voice' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Interactive voice with Gemini Live"
+            >
+              <Mic className="w-3.5 h-3.5" />
+              Gemini Live
+            </button>
           </div>
 
           {viewMode === 'presentation' && (
@@ -96,6 +107,15 @@ export const CrisisConnectView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href="/crisisconnect/CrisisConnect-Technical-Documentation.pdf"
+            download="CrisisConnect-Technical-Documentation.pdf"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+            title="Download Technical Documentation (PDF)"
+          >
+            <FileDown className="w-4 h-4" />
+            Documentation
+          </a>
           {viewMode === 'live' && (
             <button
               onClick={openInNewTab}
@@ -135,6 +155,8 @@ export const CrisisConnectView: React.FC = () => {
           nextSlide={nextSlide}
           prevSlide={prevSlide}
         />
+      ) : viewMode === 'voice' ? (
+        <GeminiLive />
       ) : (
         <VideoView />
       )}

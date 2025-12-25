@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Viewer, Entity, CameraFlyTo, ImageryLayer } from 'resium';
+import { Viewer, Entity, CameraFlyTo, Cesium3DTileset } from 'resium';
 import {
   Cartesian3,
   Color,
@@ -7,14 +7,25 @@ import {
   VerticalOrigin,
   HorizontalOrigin,
   NearFarScalar,
-  ArcGisMapServerImageryProvider,
-  EllipsoidTerrainProvider,
+  Cesium3DTileset as Cesium3DTilesetClass,
+  RequestScheduler,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import {
-  Maximize2, Minimize2, MapPin, AlertTriangle, Info, Eye,
+  Maximize2, Minimize2, MapPin, AlertTriangle, Info,
   Building2, Navigation, Layers, ChevronDown, Globe2
 } from 'lucide-react';
+
+// Google Maps API Key for Photorealistic 3D Tiles
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD0BIxrrRzbIrfXkoHjId_EDpelwE4yuco';
+
+// Increase concurrent tile requests for faster loading
+if (typeof RequestScheduler !== 'undefined') {
+  (RequestScheduler as any).requestsByServer = {
+    ...((RequestScheduler as any).requestsByServer || {}),
+    'tile.googleapis.com:443': 18,
+  };
+}
 
 // Pre-configured disaster locations
 const DISASTER_LOCATIONS = [
@@ -98,26 +109,18 @@ export function LidarViewerTool() {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
 
-  const [imageryProvider, setImageryProvider] = useState<ArcGisMapServerImageryProvider | null>(null);
-
-  // Load Esri World Imagery
+  // Configure viewer after mount
   useEffect(() => {
-    const loadImagery = async () => {
-      try {
-        const provider = await ArcGisMapServerImageryProvider.fromUrl(
-          'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'
-        );
-        setImageryProvider(provider);
-      } catch (error) {
-        console.error('Failed to load imagery:', error);
+    const timer = setTimeout(() => {
+      if (viewerRef.current?.cesiumElement) {
+        const viewer = viewerRef.current.cesiumElement;
+        // Hide the globe since we're using 3D tiles
+        viewer.scene.globe.show = false;
+        // Show credits on screen (required by Google)
+        viewer.scene.globe.enableLighting = false;
       }
-    };
-    loadImagery();
-  }, []);
-
-  useEffect(() => {
-    // Short delay to let Cesium initialize
-    const timer = setTimeout(() => setIsLoading(false), 1500);
+      setIsLoading(false);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -135,7 +138,6 @@ export function LidarViewerTool() {
     setSelectedLocation(location);
     setShowLocationDropdown(false);
 
-    // Fly to new location
     if (viewerRef.current?.cesiumElement) {
       const viewer = viewerRef.current.cesiumElement;
       viewer.camera.flyTo({
@@ -182,8 +184,8 @@ export function LidarViewerTool() {
           <div>
             <span className="text-white font-semibold text-lg drop-shadow">3D Globe View</span>
             <div className="text-white/70 text-sm drop-shadow flex items-center gap-2">
-              <span className="bg-amber-500/80 text-white text-xs px-2 py-0.5 rounded font-medium">DEMO</span>
-              Sample imagery • LiDAR integration in progress
+              <span className="bg-emerald-500/80 text-white text-xs px-2 py-0.5 rounded font-medium">3D</span>
+              Google Photorealistic 3D Tiles
             </div>
           </div>
         </div>
@@ -248,7 +250,7 @@ export function LidarViewerTool() {
           <div className="text-center">
             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <div className="text-white text-lg font-medium">Loading 3D Globe...</div>
-            <div className="text-white/60 text-sm mt-1">Streaming satellite imagery</div>
+            <div className="text-white/60 text-sm mt-1">Streaming Google 3D Tiles</div>
           </div>
         </div>
       )}
@@ -270,10 +272,14 @@ export function LidarViewerTool() {
         selectionIndicator={false}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       >
-        {/* Satellite imagery layer */}
-        {imageryProvider && (
-          <ImageryLayer imageryProvider={imageryProvider} />
-        )}
+        {/* Google Photorealistic 3D Tiles */}
+        <Cesium3DTileset
+          url={`https://tile.googleapis.com/v1/3dtiles/root.json?key=${GOOGLE_MAPS_API_KEY}`}
+          showCreditsOnScreen={true}
+          onReady={(tileset: Cesium3DTilesetClass) => {
+            console.log('Google 3D Tiles loaded');
+          }}
+        />
 
         {/* Initial camera position */}
         <CameraFlyTo
@@ -364,10 +370,10 @@ export function LidarViewerTool() {
 
           <div className="mt-4 pt-3 border-t border-white/20">
             <div className="text-xs text-amber-400/80 font-medium mb-1">
-              Simulated data for demo
+              Simulated damage data for demo
             </div>
             <div className="text-xs text-white/50">
-              Imagery: Esri World Imagery
+              Imagery: Google Photorealistic 3D Tiles
             </div>
           </div>
         </div>
@@ -387,9 +393,9 @@ export function LidarViewerTool() {
 
       {/* Attribution */}
       <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur rounded-lg px-3 py-2 shadow-lg z-10">
-        <div className="text-xs text-amber-400 font-medium">PROTOTYPE DEMO</div>
-        <div className="text-white font-medium">CesiumJS + Esri Imagery</div>
-        <div className="text-xs text-gray-400">LiDAR point cloud integration coming soon</div>
+        <div className="text-xs text-emerald-400 font-medium">PHOTOREALISTIC 3D</div>
+        <div className="text-white font-medium">Google Maps Platform</div>
+        <div className="text-xs text-gray-400">Real 3D buildings and terrain</div>
       </div>
     </div>
   );
