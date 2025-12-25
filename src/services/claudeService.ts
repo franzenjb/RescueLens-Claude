@@ -64,12 +64,14 @@ Now look at WHERE debris is located:
    - Missing shingles (but roof deck intact)
    - Broken windows, damaged siding
    - Tree touching/leaning on structure (not through it)
+   - FLOOD: Water line visible INSIDE house but LESS than 36 inches (3 feet) high
 
 4. MAJOR - Significant Structural Damage (Partial)
    - Hole in roof or wall with interior visible
    - Tree/debris penetrated through structure
    - Partial roof collapse (but some walls standing)
    - Structure damaged but still recognizable as a building
+   - FLOOD: Water line visible INSIDE house MORE than 36 inches (3 feet) high
 
 5. DESTROYED - Total Loss (Use when building form is GONE)
    ✓ Structure has COLLAPSED - no longer looks like a building
@@ -91,6 +93,8 @@ Now look at WHERE debris is located:
 - Structure looks NORMAL with debris in yard? → AFFECTED
 - Structure has HOLES but is still standing? → MAJOR
 - Structure has COLLAPSED into debris pile? → DESTROYED
+- FLOOD water line INSIDE house < 36 inches? → MINOR
+- FLOOD water line INSIDE house > 36 inches? → MAJOR
 
 RESPONSE FORMAT: Valid JSON only.`;
 
@@ -158,8 +162,13 @@ Q4: If there is debris (tree, etc.), is it:
     (a) In the YARD/STREET (not touching structure) → AFFECTED
     (b) LEANING on structure (not through it) → MINOR
     (c) PENETRATED THROUGH structure (visible breach) → MAJOR
+Q5: If there is FLOOD DAMAGE with visible water line INSIDE the house:
+    (a) Water line LESS than 36 inches (3 feet) high → MINOR
+    (b) Water line MORE than 36 inches (3 feet) high → MAJOR
 
 ⚠️ CRITICAL: If the house in the background looks INTACT with straight roof lines and standing walls, the maximum severity is AFFECTED or MINOR, regardless of yard debris.
+
+⚠️ FLOOD RULE: The 36-inch threshold is critical. Look for water stains, mud lines, or debris lines on interior walls to estimate flood height.
 
 ⚠️ A fallen tree in the FRONT YARD with an intact house behind it = AFFECTED (not MAJOR!)
 
@@ -171,7 +180,8 @@ In your pdaJustification, you MUST explicitly state:
 2. "Debris location: [yard/street/on structure/through structure]"
 3. "Roof status: [intact/damaged/breached]"
 4. "Wall status: [intact/damaged/collapsed]"
-5. "Why I did NOT choose a higher severity: [reason]"`,
+5. "Flood water line: [none/below 36 inches/above 36 inches]" (if flood damage present)
+6. "Why I did NOT choose a higher severity: [reason]"`,
             },
           ],
         },
