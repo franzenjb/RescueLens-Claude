@@ -61,8 +61,18 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             </button>
 
-            {/* Actions - Reserved for future use */}
-            <div className="flex items-center gap-4">
+            {/* Contact Info */}
+            <div className="text-right">
+              <p className="text-xs text-white/80">For more information contact</p>
+              <p className="text-sm font-semibold">
+                Jeff Franzen •{' '}
+                <a
+                  href="mailto:Jeff.Franzen2@redcross.org"
+                  className="hover:underline"
+                >
+                  Jeff.Franzen2@redcross.org
+                </a>
+              </p>
             </div>
           </div>
         </div>
