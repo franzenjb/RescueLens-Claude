@@ -67,10 +67,10 @@ export const Layout: React.FC<LayoutProps> = ({
               <p className="text-sm font-semibold">
                 Jeff Franzen •{' '}
                 <a
-                  href="mailto:Jeff.Franzen2@redcross.org"
+                  href="mailto:jbf@jbf.com"
                   className="hover:underline"
                 >
-                  Jeff.Franzen2@redcross.org
+                  jbf@jbf.com
                 </a>
               </p>
             </div>
