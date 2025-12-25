@@ -111,10 +111,10 @@ export const CrisisConnectView: React.FC = () => {
             href="/crisisconnect/CrisisConnect-Technical-Documentation.pdf"
             download="CrisisConnect-Technical-Documentation.pdf"
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
-            title="Download Technical Documentation (PDF)"
+            title="Download full project documentation with protocols, guardrails, and technical specs (PDF)"
           >
             <FileDown className="w-4 h-4" />
-            Documentation
+            Technical Brief (PDF)
           </a>
           {viewMode === 'live' && (
             <button
