@@ -159,43 +159,132 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onReportCreated }) => {
             Field Assessment
           </h2>
 
-          {/* How It Works */}
-          <div className="bg-slate-950/50 rounded-xl p-4 mb-6 border border-slate-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Shield className="w-4 h-4 text-red-500" />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">How It Works</span>
+          {/* Queue - Shows selected images at the top */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-red-500" />
+                Selected Images ({queue.length})
+              </span>
+              {queue.length > 0 && (
+                <span className="text-[10px] text-emerald-400 animate-pulse">Ready for analysis</span>
+              )}
             </div>
-            <div className="space-y-3 text-xs text-slate-400">
-              <div className="flex items-start gap-2">
-                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-red-400 font-bold text-[10px]">1</span>
+            <div className="space-y-2 max-h-48 overflow-y-auto bg-slate-950/50 rounded-xl border border-slate-800 p-3">
+              {queue.length === 0 ? (
+                <div className="py-8 text-center">
+                  <ImageIcon className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                  <p className="text-xs text-slate-600">No images selected</p>
+                  <p className="text-[10px] text-slate-700 mt-1">Upload or select sample images below</p>
                 </div>
-                <p>Upload damage photos from your device</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-blue-400 font-bold text-[10px]">2</span>
-                </div>
-                <p>Claude AI analyzes structural damage vs debris</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-emerald-400 font-bold text-[10px]">3</span>
-                </div>
-                <p>Review FEMA PDA classification and save report</p>
-              </div>
+              ) : (
+                queue.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-lg border border-slate-700/50 animate-in fade-in slide-in-from-top-2 duration-300"
+                  >
+                    <img
+                      src={item.preview}
+                      alt=""
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-300 truncate">{item.file.name}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        {item.status === 'pending' && (
+                          <span className="text-[10px] text-slate-500 uppercase">Waiting</span>
+                        )}
+                        {item.status === 'analyzing' && (
+                          <span className="text-[10px] text-red-400 uppercase flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Analyzing
+                          </span>
+                        )}
+                        {item.status === 'completed' && (
+                          <span className="text-[10px] text-emerald-400 uppercase flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Complete
+                          </span>
+                        )}
+                        {item.status === 'error' && (
+                          <span className="text-[10px] text-red-400 uppercase flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Error
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFromQueue(item.id)}
+                      className="p-1 text-slate-500 hover:text-red-400"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Process Button - Right below queue */}
+            <button
+              onClick={processQueue}
+              disabled={pendingCount === 0 || processing}
+              className={`w-full mt-3 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                pendingCount === 0 || processing
+                  ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30'
+              }`}
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Start Analysis ({pendingCount} pending)
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-slate-900 px-3 text-[10px] text-slate-600 uppercase tracking-widest">Add Images</span>
             </div>
           </div>
 
+          {/* Upload Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full py-6 border-2 border-dashed border-slate-700 rounded-xl hover:border-red-500/50 hover:bg-red-500/5 transition-all group mb-4"
+          >
+            <Upload className="w-6 h-6 text-slate-500 group-hover:text-red-500 mx-auto mb-2" />
+            <span className="text-sm font-bold text-slate-400 group-hover:text-slate-300">
+              Upload from device
+            </span>
+            <p className="text-[10px] text-slate-600 mt-1">JPG, PNG, WebP supported</p>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
           {/* Sample Images Gallery */}
-          <div className="mb-6">
+          <div>
             <button
               onClick={() => setShowSamples(!showSamples)}
               className="w-full flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all group"
             >
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-bold text-slate-300">Try FEMA Sample Images</span>
+                <span className="text-xs font-bold text-slate-300">Or try FEMA Sample Images</span>
               </div>
               <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showSamples ? 'rotate-180' : ''}`} />
             </button>
@@ -203,7 +292,7 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onReportCreated }) => {
             {showSamples && (
               <div className="mt-3 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
                 <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">
-                  Click any image to test AI classification
+                  Click images to add to queue above ↑
                 </p>
                 <div className="grid grid-cols-4 gap-2">
                   {SAMPLE_IMAGES.map(sample => (
@@ -232,99 +321,16 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onReportCreated }) => {
             )}
           </div>
 
-          {/* Upload Button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full py-8 border-2 border-dashed border-slate-700 rounded-xl hover:border-red-500/50 hover:bg-red-500/5 transition-all group"
-          >
-            <Upload className="w-8 h-8 text-slate-500 group-hover:text-red-500 mx-auto mb-2" />
-            <span className="text-sm font-bold text-slate-400 group-hover:text-slate-300">
-              Click to upload photos
-            </span>
-            <p className="text-[10px] text-slate-600 mt-1">JPG, PNG, WebP supported</p>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-
-          {/* Queue */}
-          <div className="mt-6 space-y-2 max-h-64 overflow-y-auto">
-            {queue.length === 0 ? (
-              <div className="py-6 text-center border border-slate-800 rounded-lg">
-                <p className="text-xs text-slate-600 uppercase tracking-widest">No photos in queue</p>
-              </div>
-            ) : (
-              queue.map(item => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-lg border border-slate-700/50"
-                >
-                  <img
-                    src={item.preview}
-                    alt=""
-                    className="w-12 h-12 object-cover rounded-lg"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-300 truncate">{item.file.name}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {item.status === 'pending' && (
-                        <span className="text-[10px] text-slate-500 uppercase">Waiting</span>
-                      )}
-                      {item.status === 'analyzing' && (
-                        <span className="text-[10px] text-red-400 uppercase flex items-center gap-1">
-                          <Loader2 className="w-3 h-3 animate-spin" /> Analyzing
-                        </span>
-                      )}
-                      {item.status === 'completed' && (
-                        <span className="text-[10px] text-emerald-400 uppercase flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Complete
-                        </span>
-                      )}
-                      {item.status === 'error' && (
-                        <span className="text-[10px] text-red-400 uppercase flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> Error
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeFromQueue(item.id)}
-                    className="p-1 text-slate-500 hover:text-red-400"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
+          {/* How It Works - Collapsed at bottom */}
+          <div className="mt-6 bg-slate-950/50 rounded-xl p-4 border border-slate-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-red-500" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">How It Works</span>
+            </div>
+            <div className="space-y-2 text-xs text-slate-500">
+              <p><span className="text-red-400 font-bold">1.</span> Select or upload images → <span className="text-blue-400 font-bold">2.</span> Click "Start Analysis" → <span className="text-emerald-400 font-bold">3.</span> Review AI results</p>
+            </div>
           </div>
-
-          {/* Process Button */}
-          <button
-            onClick={processQueue}
-            disabled={pendingCount === 0 || processing}
-            className={`w-full mt-4 py-3 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-              pendingCount === 0 || processing
-                ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30'
-            }`}
-          >
-            {processing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                Start Analysis
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
         </div>
       </div>
 
