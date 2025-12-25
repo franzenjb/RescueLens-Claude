@@ -36,6 +36,34 @@ If you see a fallen tree in the image, ask yourself:
 If you answered NO to all three → The tree is in the YARD → Classify as AFFECTED
 A tree lying on grass, even if NEAR a house, is YARD DEBRIS, not structural damage.
 
+🌊 STOP AND CHECK: FLOOD/WATER DAMAGE IMAGES
+LOOK CAREFULLY at the EXTERIOR WALLS of the structure for water line evidence:
+- WATER STAIN LINE on brick, siding, or stucco - a horizontal discoloration line
+- MUD LINE - darker color below a certain height, cleaner above
+- DEBRIS LINE - leaves, grass, or sediment stuck to walls at a consistent height
+- DISCOLORATION BAND - where flood water sat against the structure
+
+These stains are PROOF that water entered the home at that height!
+
+Other flood indicators:
+- FEMA inspection signs
+- Debris piled against house
+- Waterlogged items in yard
+
+⚠️ CRITICAL FLOOD RULE - THE 36-INCH THRESHOLD:
+When you see a water stain/mud line on the EXTERIOR of a house:
+- Stain line BELOW 36 inches from ground = MINOR (water entered but below 3 feet)
+- Stain line ABOVE 36 inches from ground = MAJOR (water exceeded 3 feet inside)
+
+Reference points to estimate height:
+  * Foundation top/first brick course ≈ 6-12 inches
+  * Electrical meter box bottom ≈ 36-48 inches
+  * Door handle height ≈ 36 inches
+  * Window sill height ≈ 30-36 inches
+  * Bottom of windows ≈ 24-36 inches
+
+- NEVER classify flood-damaged homes as just "AFFECTED" - minimum is MINOR if water entered.
+
 🔍 STEP 1: IDENTIFY THE STRUCTURE
 First, locate and assess the PRIMARY STRUCTURE (house/building):
 - Look at the ROOF: Are the lines straight? Any visible holes or missing sections?
@@ -88,6 +116,9 @@ Now look at WHERE debris is located:
 ❌ Classifying yard debris as structural damage
 ❌ Using MAJOR when structure has completely collapsed (that's DESTROYED)
 ❌ Using MAJOR when you cannot see actual structural damage (that's AFFECTED)
+❌ Classifying FLOOD-DAMAGED homes as "AFFECTED" - if water entered, minimum is MINOR
+❌ Ignoring FEMA "WATER DAMAGE" signs - these confirm interior flooding occurred
+❌ Not assessing water line height when flood evidence is present
 
 ✅ QUICK DECISION GUIDE:
 - Structure looks NORMAL with debris in yard? → AFFECTED
