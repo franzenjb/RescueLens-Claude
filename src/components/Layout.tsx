@@ -1,6 +1,6 @@
 import React from 'react';
-import { Camera, History, Map, BarChart3, Settings, Shield, Phone, Radar, Info } from 'lucide-react';
-import { tools, aboutTool } from '../tools/registry';
+import { Camera, History, Map, BarChart3, Settings, Shield, Phone, Radar, Home } from 'lucide-react';
+import { tools, homeTool } from '../tools/registry';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,10 +21,10 @@ const rescuelensTabs = [
 
 // Tool icons mapping
 const toolIcons: Record<string, React.FC<{ className?: string }>> = {
+  home: Home,
   rescuelens: Camera,
   crisisconnect: Phone,
   lidar: Radar,
-  about: Info,
 };
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -34,7 +34,8 @@ export const Layout: React.FC<LayoutProps> = ({
   onToolChange,
   onTabChange,
 }) => {
-  const allTools = [...tools, aboutTool];
+  // Home first, then other tools
+  const allTools = [homeTool, ...tools];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col">
@@ -42,12 +43,15 @@ export const Layout: React.FC<LayoutProps> = ({
       <header className="bg-[#ce1126] text-white">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo & Title */}
-            <div className="flex items-center gap-3">
+            {/* Logo & Title - Clickable to go Home */}
+            <button
+              onClick={() => onToolChange('home')}
+              className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+            >
               <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
                 <Shield className="w-6 h-6 text-[#ce1126]" />
               </div>
-              <div>
+              <div className="text-left">
                 <h1 className="text-lg font-black tracking-tight">
                   Red Cross Innovation Suite
                 </h1>
@@ -55,7 +59,7 @@ export const Layout: React.FC<LayoutProps> = ({
                   Disaster Response Technology
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* Actions - Reserved for future use */}
             <div className="flex items-center gap-4">
@@ -69,7 +73,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-1">
             {allTools.map((tool) => {
-              const Icon = toolIcons[tool.id] || Info;
+              const Icon = toolIcons[tool.id] || Home;
               const isActive = activeTool === tool.id;
 
               return (

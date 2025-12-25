@@ -1,4 +1,4 @@
-import { Camera, Phone, Radar, Info, LucideIcon } from 'lucide-react';
+import { Camera, Phone, Radar, Home, LucideIcon } from 'lucide-react';
 
 export interface ToolConfig {
   id: string;
@@ -82,12 +82,12 @@ export const tools: ToolConfig[] = [
   },
 ];
 
-export const aboutTool: ToolConfig = {
-  id: 'about',
-  name: 'About',
+export const homeTool: ToolConfig = {
+  id: 'home',
+  name: 'Home',
   shortName: 'Overview',
-  description: 'Learn about the Red Cross Innovation Suite',
-  icon: Info,
+  description: 'Red Cross Innovation Suite Home',
+  icon: Home,
   color: '#64748b',
   gradient: 'from-slate-600 to-slate-800',
   splash: {
@@ -98,7 +98,7 @@ export const aboutTool: ToolConfig = {
 };
 
 export const getToolById = (id: string): ToolConfig | undefined => {
-  if (id === 'about') return aboutTool;
+  if (id === 'home') return homeTool;
   return tools.find(t => t.id === id);
 };
 

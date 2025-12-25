@@ -15,7 +15,7 @@ import { getSettings } from './services/storageService';
 import { tools, getToolById } from './tools/registry';
 
 function App() {
-  const [activeTool, setActiveTool] = useState('about');
+  const [activeTool, setActiveTool] = useState('home');
   const [activeTab, setActiveTab] = useState('analyze');
   const [showSplash, setShowSplash] = useState(false);
   const [pendingTool, setPendingTool] = useState<string | null>(null);
@@ -44,8 +44,8 @@ function App() {
   }, []);
 
   const handleToolChange = (toolId: string) => {
-    // About doesn't need splash
-    if (toolId === 'about') {
+    // Home doesn't need splash
+    if (toolId === 'home') {
       setActiveTool(toolId);
       return;
     }
@@ -77,7 +77,7 @@ function App() {
     }
 
     switch (activeTool) {
-      case 'about':
+      case 'home':
         return <AboutView onSelectTool={handleToolChange} />;
 
       case 'rescuelens':
