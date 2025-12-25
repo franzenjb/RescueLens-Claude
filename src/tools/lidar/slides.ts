@@ -7,7 +7,7 @@ export interface Slide {
 export const lidarSlides: Slide[] = [
   {
     id: 'slide-01',
-    imageUrl: '/slides/slide-hq-01.png',
+    imageUrl: '/slides/slide-hq-01.jpg',
     title: 'When the Sun Sets, the Mission Doesn\'t Stop',
   },
   {
