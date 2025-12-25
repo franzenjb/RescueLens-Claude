@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrisisConnect - Technical Documentation & Strategic Overview</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --brand-red: #dc2626;
+            --brand-dark: #991b1b;
+            --emerald: #059669;
+            --slate-900: #0f172a;
+            --slate-700: #334155;
+            --slate-500: #64748b;
+            --slate-300: #cbd5e1;
+            --slate-100: #f1f5f9;
+        }
+
+        @page {
+            size: letter;
+            margin: 0.75in;
+        }
+
+        @media print {
+            body {
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .no-print {
+                display: none;
+            }
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+            table, figure {
+                page-break-inside: avoid;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #1e293b;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+            background: white;
+        }
+
+        /* Cover Page */
+        .cover {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2in 1in;
+            border-bottom: 4px solid var(--brand-red);
+        }
+
+        .cover-logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--brand-red), var(--brand-dark));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(220, 38, 38, 0.3);
+        }
+
+        .cover-logo svg {
+            width: 60px;
+            height: 60px;
+            color: white;
+        }
+
+        .cover h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .cover h1 span {
+            color: var(--brand-red);
+        }
+
+        .cover-subtitle {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--slate-500);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 3rem;
+        }
+
+        .cover-meta {
+            font-size: 0.9rem;
+            color: var(--slate-500);
+            margin-top: auto;
+        }
+
+        .cover-meta strong {
+            color: var(--slate-700);
+        }
+
+        /* Headers */
+        h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--brand-red);
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 3px solid var(--brand-red);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--slate-900);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding-left: 1rem;
+            border-left: 4px solid var(--brand-red);
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--slate-700);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--slate-600);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Content */
+        p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .lead {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--slate-600);
+            margin-bottom: 1.5rem;
+        }
+
+        ul, ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .callout-red {
+            background: #fef2f2;
+            border-left: 4px solid var(--brand-red);
+        }
+
+        .callout-green {
+            background: #ecfdf5;
+            border-left: 4px solid var(--emerald);
+        }
+
+        .callout-blue {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+
+        .callout-gray {
+            background: var(--slate-100);
+            border-left: 4px solid var(--slate-500);
+        }
+
+        .callout h4 {
+            margin-top: 0;
+            font-weight: 700;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid var(--slate-300);
+        }
+
+        th {
+            background: var(--slate-900);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:nth-child(even) {
+            background: var(--slate-100);
+        }
+
+        /* Code blocks */
+        code {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.85em;
+            background: var(--slate-100);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: var(--slate-900);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Principles Grid */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .principle-card {
+            background: var(--slate-100);
+            border-radius: 8px;
+            padding: 1.25rem;
+            border-left: 4px solid var(--brand-red);
+        }
+
+        .principle-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: var(--brand-red);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .principle-card h4 {
+            margin: 0.5rem 0 0 0;
+            font-size: 1rem;
+        }
+
+        /* Guardrail sections */
+        .guardrail-section {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #fef2f2;
+            border-radius: 8px;
+        }
+
+        .guardrail-section h4 {
+            color: var(--brand-red);
+            margin-top: 0;
+        }
+
+        .forbidden {
+            color: var(--brand-red);
+            font-weight: 600;
+        }
+
+        .approved {
+            color: var(--emerald);
+            font-weight: 600;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--slate-100);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--slate-900);
+        }
+
+        .toc ol {
+            columns: 2;
+            column-gap: 2rem;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        .toc a {
+            color: var(--slate-700);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            color: var(--brand-red);
+        }
+
+        /* Footer */
+        .document-footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--slate-300);
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        /* Architecture diagram */
+        .architecture-box {
+            background: var(--slate-900);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+        }
+
+        .architecture-box h4 {
+            color: var(--brand-red);
+            margin-top: 0;
+        }
+
+        .architecture-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .flow-item {
+            background: rgba(255,255,255,0.1);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .flow-arrow {
+            color: var(--brand-red);
+            font-weight: bold;
+        }
+
+        /* Version badge */
+        .version-badge {
+            display: inline-block;
+            background: var(--brand-red);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body>
+
+<!-- BETA DISCLAIMER BANNER -->
+<div style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white; padding: 1.5rem 2rem; margin: -0.5in -0.5in 0 -0.5in; text-align: center;">
+    <p style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.75rem;">
+        BETA PROTOTYPE - CONCEPTUAL DEMONSTRATION ONLY
+    </p>
+    <p style="font-size: 0.85rem; line-height: 1.6; max-width: 800px; margin: 0 auto; opacity: 0.95;">
+        This document describes a strategic proof-of-concept prototype representing approximately 10% of production-grade quality.
+        A deployment-ready system would require development by professional software engineers with expertise in mission-critical telecommunications,
+        similar to the teams building AI-enhanced 911 systems currently being deployed globally. This prototype demonstrates feasibility and strategic direction only.
+    </p>
+</div>
+
+<!-- COVER PAGE -->
+<div class="cover" style="padding-top: 1in;">
+    <div class="cover-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+    </div>
+    <h1>Crisis<span>Connect</span></h1>
+    <p class="cover-subtitle">Technical Documentation & Strategic Overview</p>
+
+    <div style="margin: 2rem 0;">
+        <span class="version-badge">Beta Prototype v2.6</span>
+    </div>
+
+    <p style="max-width: 500px; color: #64748b; font-size: 1rem; line-height: 1.8;">
+        AI-Powered Disaster Intake System<br>
+        Gemini Live API Integration<br>
+        800-Number Operator Protocols
+    </p>
+
+    <div class="cover-meta" style="margin-top: 3rem;">
+        <p><strong>Disaster Response Innovation Suite</strong></p>
+        <p>Author: Jeff Franzen | jbf@jbf.com</p>
+        <p>Document Date: December 2025</p>
+        <p style="margin-top: 1rem; font-style: italic; color: #dc2626; font-weight: 600;">PROTOTYPE - NOT FOR PRODUCTION USE</p>
+    </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="page-break"></div>
+<h1>Table of Contents</h1>
+
+<div class="toc">
+    <ol>
+        <li><a href="#executive-summary">Executive Summary</a></li>
+        <li><a href="#project-overview">Project Overview</a></li>
+        <li><a href="#technical-architecture">Technical Architecture</a></li>
+        <li><a href="#core-principles">Core Operating Principles</a></li>
+        <li><a href="#safety-protocols">Safety Protocols & Life-Safety Triage</a></li>
+        <li><a href="#ai-guardrails">AI Guardrails & Hard Boundaries</a></li>
+        <li><a href="#call-flow">Adaptive Call Flow Logic</a></li>
+        <li><a href="#third-party">Third-Party Fire Reports</a></li>
+        <li><a href="#safety-guidance">Emergency Safety Guidance</a></li>
+        <li><a href="#shelter-info">Shelter Information System</a></li>
+        <li><a href="#multilingual">Multilingual Support</a></li>
+        <li><a href="#data-capture">Data Capture & Dashboard Integration</a></li>
+        <li><a href="#tech-stack">Technology Stack</a></li>
+        <li><a href="#deployment">Deployment & Configuration</a></li>
+    </ol>
+    <p style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #cbd5e1;">
+        <strong><a href="#future-opportunities">Appendix A: Future Expansion Opportunities (30 Ideas)</a></strong>
+    </p>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="page-break"></div>
+<h1 id="executive-summary">1. Executive Summary</h1>
+
+<p class="lead">
+    CrisisConnect represents the next evolution in disaster situational awareness. This AI-powered intake system automates the critical first 90 seconds of disaster calls, ensuring human resources are optimized for physical intervention while the digital operator manages high-volume data collection.
+</p>
+
+<div class="callout callout-red">
+    <h4>Mission Statement</h4>
+    <p style="margin-bottom: 0;">To provide immediate, compassionate, and protocol-compliant disaster assistance to survivors through AI-powered voice interaction, while capturing structured data for operational coordination and volunteer dispatch.</p>
+</div>
+
+<h3>Key Capabilities</h3>
+<ul>
+    <li><strong>Real-Time Voice Interaction:</strong> Bidirectional streaming via Google Gemini 2.0 Live API</li>
+    <li><strong>Instant Language Detection:</strong> Seamless switching between 6+ languages without menu delays</li>
+    <li><strong>Structured Data Capture:</strong> Automatic extraction of caller information for maps and dashboards</li>
+    <li><strong>Safety-First Protocols:</strong> Mandatory 9-1-1 triage before any data collection</li>
+    <li><strong>AI Guardrails:</strong> Hard-coded prohibitions against promises, medical advice, and legal guidance</li>
+    <li><strong>Third-Party Intake:</strong> Specialized flows for fire department and neighbor reports</li>
+</ul>
+
+<h3>Deployment Status</h3>
+<table>
+    <tr>
+        <th>Component</th>
+        <th>Status</th>
+        <th>Platform</th>
+    </tr>
+    <tr>
+        <td>AI Studio Demo</td>
+        <td>Production</td>
+        <td>Google Cloud Run</td>
+    </tr>
+    <tr>
+        <td>Gemini Live Integration</td>
+        <td>Production</td>
+        <td>Vercel (RescueLens)</td>
+    </tr>
+    <tr>
+        <td>Dashboard Export</td>
+        <td>Active</td>
+        <td>JSON / ArcGIS Ready</td>
+    </tr>
+</table>
+
+<!-- PROJECT OVERVIEW -->
+<div class="page-break"></div>
+<h1 id="project-overview">2. Project Overview</h1>
+
+<h2>Problem Statement</h2>
+<p>
+    During major disasters, call centers experience extreme call volumes. Traditional human-only intake creates bottlenecks, inconsistent data capture, and delays in deploying volunteers to affected families. Non-English speakers face additional barriers through IVR menu systems ("Press 1 for English").
+</p>
+
+<h2>Solution Architecture</h2>
+<p>
+    CrisisConnect deploys an AI-powered operator that handles initial intake calls with full voice interaction. The system follows strict disaster response protocols, captures structured data, and enables immediate volunteer dispatch coordination.
+</p>
+
+<div class="architecture-box">
+    <h4>System Flow</h4>
+    <div class="architecture-flow">
+        <span class="flow-item">Caller Dials 1-800</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item">Gemini Live WebSocket</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item">Voice Processing</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item">Protocol Engine</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item">Data Capture</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-item">Dashboard/Maps</span>
+    </div>
+</div>
+
+<h2>Key Differentiators</h2>
+
+<h3>vs. Traditional IVR Systems</h3>
+<ul>
+    <li>No "Press 1 for English" delays - instant language detection</li>
+    <li>Natural conversation flow vs. rigid menu trees</li>
+    <li>Emotional intelligence - recognizes distress and panic</li>
+    <li>Structured data extraction without manual transcription</li>
+</ul>
+
+<h3>vs. Generic AI Chatbots</h3>
+<ul>
+    <li>Purpose-built for disaster response - not general-purpose</li>
+    <li>Hard-coded safety protocols prevent hallucination</li>
+    <li>Sequential Lock state machine ensures data integrity</li>
+    <li>Trained on disaster response operator guidelines</li>
+</ul>
+
+<!-- TECHNICAL ARCHITECTURE -->
+<div class="page-break"></div>
+<h1 id="technical-architecture">3. Technical Architecture</h1>
+
+<h2>Core Technology Stack</h2>
+
+<table>
+    <tr>
+        <th>Layer</th>
+        <th>Technology</th>
+        <th>Purpose</th>
+    </tr>
+    <tr>
+        <td>Voice AI</td>
+        <td>Google Gemini 2.0 Flash (Live API)</td>
+        <td>Bidirectional audio streaming, language understanding</td>
+    </tr>
+    <tr>
+        <td>Transport</td>
+        <td>WebSocket (WSS)</td>
+        <td>Real-time audio transmission</td>
+    </tr>
+    <tr>
+        <td>Frontend</td>
+        <td>React + TypeScript</td>
+        <td>User interface, audio capture</td>
+    </tr>
+    <tr>
+        <td>Audio Processing</td>
+        <td>Web Audio API</td>
+        <td>Microphone capture (16kHz), playback (24kHz)</td>
+    </tr>
+    <tr>
+        <td>Hosting</td>
+        <td>Vercel + Google Cloud Run</td>
+        <td>Global edge deployment</td>
+    </tr>
+    <tr>
+        <td>Data Export</td>
+        <td>JSON / ArcGIS FeatureServer</td>
+        <td>Dashboard and map integration</td>
+    </tr>
+</table>
+
+<h2>Gemini Live API Integration</h2>
+
+<h3>WebSocket Connection</h3>
+<pre><code>wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key={API_KEY}</code></pre>
+
+<h3>Model Configuration</h3>
+<pre><code>{
+  "setup": {
+    "model": "models/gemini-2.0-flash-exp",
+    "generationConfig": {
+      "responseModalities": ["AUDIO"],
+      "speechConfig": {
+        "voiceConfig": {
+          "prebuiltVoiceConfig": {
+            "voiceName": "Aoede"
+          }
+        }
+      }
+    },
+    "systemInstruction": {
+      "parts": [{ "text": "SYSTEM_PROMPT" }]
+    }
+  }
+}</code></pre>
+
+<h3>Audio Format Specifications</h3>
+<ul>
+    <li><strong>Input (Microphone):</strong> PCM 16-bit, 16kHz sample rate, mono</li>
+    <li><strong>Output (Playback):</strong> PCM 16-bit, 24kHz sample rate, mono</li>
+    <li><strong>Encoding:</strong> Base64 for WebSocket transmission</li>
+</ul>
+
+<!-- CORE PRINCIPLES -->
+<div class="page-break"></div>
+<h1 id="core-principles">4. Core Operating Principles</h1>
+
+<p class="lead">
+    The CrisisConnect operator is governed by four non-negotiable principles that form the foundation of every interaction.
+</p>
+
+<div class="principles-grid">
+    <div class="principle-card">
+        <span class="principle-number">01</span>
+        <h4>Safety Gate First</h4>
+        <p>Every call begins with life-safety triage. No data collection proceeds until the caller's immediate safety is confirmed. Emergency situations are redirected to 9-1-1.</p>
+    </div>
+    <div class="principle-card">
+        <span class="principle-number">02</span>
+        <h4>Data Stack Second</h4>
+        <p>Structured data capture follows safety confirmation. The system tracks which critical data points have been collected and naturally circles back to gather missing information.</p>
+    </div>
+    <div class="principle-card">
+        <span class="principle-number">03</span>
+        <h4>Compassion Always</h4>
+        <p>Every response acknowledges the caller's emotional state. The AI uses warm, empathetic language and is patient with pauses, crying, or confusion.</p>
+    </div>
+    <div class="principle-card">
+        <span class="principle-number">04</span>
+        <h4>Promises Never</h4>
+        <p>The AI never makes commitments about aid amounts, approval timelines, or volunteer arrival. It uses precise language that sets appropriate expectations.</p>
+    </div>
+</div>
+
+<h2>The "Sequential Lock" Protocol</h2>
+<p>
+    CrisisConnect operates as an Autonomous State Machine. The intake follows a non-linear but strictly locked sequence that ensures data integrity while allowing natural conversation flow:
+</p>
+
+<ol>
+    <li><strong>Safety Gate:</strong> Confirm caller is not in immediate danger</li>
+    <li><strong>Identity:</strong> Establish who is calling (direct victim vs. third party)</li>
+    <li><strong>Report Classification:</strong> Determine disaster type and situation</li>
+    <li><strong>Personnel:</strong> Capture household composition and vulnerabilities</li>
+    <li><strong>Location:</strong> Geo-locate the affected address</li>
+    <li><strong>Needs Assessment:</strong> Document required assistance types</li>
+    <li><strong>Referral:</strong> Provide appropriate resources and next steps</li>
+</ol>
+
+<!-- SAFETY PROTOCOLS -->
+<div class="page-break"></div>
+<h1 id="safety-protocols">5. Safety Protocols & Life-Safety Triage</h1>
+
+<h2>Mandatory Opening Script</h2>
+<div class="callout callout-red">
+    <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0;">
+        "Thank you for calling the Disaster Relief Hotline. If this is a life-threatening emergency, please hang up and dial 9-1-1. I am an automated assistant documenting this report for operational records. Human support is available if needed. How can I assist you today?"
+    </p>
+</div>
+
+<h2>Life-Safety Triage Questions</h2>
+<p>If the caller sounds distressed, panicked, or mentions danger, the AI IMMEDIATELY asks:</p>
+<ol>
+    <li>"Are you in a safe location right now?"</li>
+    <li>"Is anyone injured or in need of immediate medical attention?"</li>
+    <li>"Do you have access to clean water and safe shelter?"</li>
+</ol>
+
+<h2>Safety Triggers - Immediate 9-1-1 Redirect</h2>
+<p>If the caller mentions ANY of these situations:</p>
+<ul>
+    <li>Trapped, can't escape, water rising, fire spreading</li>
+    <li>Chest pain, difficulty breathing, severe bleeding, unconscious person</li>
+    <li>Active threat, violence, someone in danger</li>
+    <li>Gas smell, structure collapsing, electrical danger</li>
+</ul>
+
+<div class="callout callout-red">
+    <h4>Exact Emergency Response</h4>
+    <p style="margin-bottom: 0;">
+        "This sounds like an emergency. Please hang up and call 9-1-1 right now—they can dispatch help immediately. Once you're safe, please call us back and we'll help with everything else."
+    </p>
+</div>
+
+<!-- AI GUARDRAILS -->
+<div class="page-break"></div>
+<h1 id="ai-guardrails">6. AI Guardrails & Hard Boundaries</h1>
+
+<p class="lead">
+    The AI operates within strict guardrails that prevent harmful outputs. These are not suggestions—they are hard-coded prohibitions enforced at the system prompt level.
+</p>
+
+<h2>Financial Promises</h2>
+<div class="guardrail-section">
+    <h4>NEVER Say These Phrases:</h4>
+    <ul>
+        <li class="forbidden">"You will receive..."</li>
+        <li class="forbidden">"You're approved for..."</li>
+        <li class="forbidden">"You'll get $X..."</li>
+        <li class="forbidden">"We will pay..."</li>
+        <li class="forbidden">"I can guarantee..."</li>
+    </ul>
+    <h4 style="margin-top: 1rem;">INSTEAD, Always Say:</h4>
+    <ul>
+        <li class="approved">"We may be able to help with..."</li>
+        <li class="approved">"Financial assistance is available based on assessment..."</li>
+        <li class="approved">"A caseworker will review your situation and discuss options..."</li>
+    </ul>
+</div>
+
+<h2>Medical Advice</h2>
+<div class="guardrail-section">
+    <h4>NEVER Say These Phrases:</h4>
+    <ul>
+        <li class="forbidden">"It sounds like you have..."</li>
+        <li class="forbidden">"You should take..."</li>
+        <li class="forbidden">"That's probably just..."</li>
+        <li class="forbidden">"It doesn't sound serious..."</li>
+    </ul>
+    <h4 style="margin-top: 1rem;">INSTEAD, Always Say:</h4>
+    <ul>
+        <li class="approved">"I'm not able to give medical advice. Please contact a healthcare provider."</li>
+        <li class="approved">"For any medical concerns, please call your doctor or visit an urgent care."</li>
+        <li class="approved">"Our shelters have medical staff who can help assess that when you arrive."</li>
+    </ul>
+</div>
+
+<h2>Legal Advice</h2>
+<div class="guardrail-section">
+    <h4>NEVER Say These Phrases:</h4>
+    <ul>
+        <li class="forbidden">"Your landlord can't..."</li>
+        <li class="forbidden">"You have a right to..."</li>
+        <li class="forbidden">"The insurance company has to..."</li>
+        <li class="forbidden">"That's illegal..."</li>
+    </ul>
+    <h4 style="margin-top: 1rem;">INSTEAD, Always Say:</h4>
+    <ul>
+        <li class="approved">"For legal questions, I recommend contacting local legal aid services."</li>
+        <li class="approved">"FEMA may have resources about your rights as a disaster survivor."</li>
+    </ul>
+</div>
+
+<h2>Weather & Utility Predictions</h2>
+<div class="guardrail-section">
+    <h4>NEVER Say:</h4>
+    <ul>
+        <li class="forbidden">"The storm will..."</li>
+        <li class="forbidden">"Power should be back by..."</li>
+        <li class="forbidden">"It's safe to return..."</li>
+    </ul>
+    <h4 style="margin-top: 1rem;">INSTEAD, Always Say:</h4>
+    <ul>
+        <li class="approved">"For current weather conditions, please check the National Weather Service."</li>
+        <li class="approved">"Contact your utility company for restoration estimates."</li>
+        <li class="approved">"Local emergency management will announce when it's safe to return."</li>
+    </ul>
+</div>
+
+<h2>Privacy & Location of Individuals</h2>
+<div class="guardrail-section">
+    <h4>NEVER Reveal:</h4>
+    <ul>
+        <li class="forbidden">Specific shelter a person is staying at</li>
+        <li class="forbidden">Whether a specific person has called</li>
+        <li class="forbidden">Contact information for other callers</li>
+    </ul>
+    <h4 style="margin-top: 1rem;">INSTEAD, Always Say:</h4>
+    <ul>
+        <li class="approved">"I can help you register on Safe and Well so your family knows you're okay."</li>
+        <li class="approved">"If you're looking for someone, check safeandwell.org or call the disaster assistance hotline."</li>
+    </ul>
+</div>
+
+<!-- CALL FLOW LOGIC -->
+<div class="page-break"></div>
+<h1 id="call-flow">7. Adaptive Call Flow Logic</h1>
+
+<p class="lead">
+    Callers often skip questions or provide information out of order. The system handles this gracefully while ensuring all critical data is eventually captured.
+</p>
+
+<h2>Information Tracking</h2>
+<p>The AI mentally tracks which critical data points have been collected:</p>
+
+<table>
+    <tr>
+        <th>Data Point</th>
+        <th>Priority</th>
+        <th>Required For</th>
+    </tr>
+    <tr>
+        <td>Safety status confirmed</td>
+        <td>Critical</td>
+        <td>All calls</td>
+    </tr>
+    <tr>
+        <td>Location (city, ZIP, address)</td>
+        <td>Critical</td>
+        <td>Resource matching, volunteer dispatch</td>
+    </tr>
+    <tr>
+        <td>Household size</td>
+        <td>High</td>
+        <td>Shelter capacity, aid calculation</td>
+    </tr>
+    <tr>
+        <td>Vulnerable members</td>
+        <td>High</td>
+        <td>Medical shelter assignment</td>
+    </tr>
+    <tr>
+        <td>Pets</td>
+        <td>Medium</td>
+        <td>Pet-friendly shelter assignment</td>
+    </tr>
+    <tr>
+        <td>Primary need</td>
+        <td>Critical</td>
+        <td>Service routing</td>
+    </tr>
+    <tr>
+        <td>Contact phone</td>
+        <td>High</td>
+        <td>Volunteer callback</td>
+    </tr>
+</table>
+
+<h2>Handling Skipped Questions</h2>
+
+<h3>If Caller Jumps Ahead</h3>
+<p>Accept the information, acknowledge it, then circle back naturally:</p>
+<div class="callout callout-gray">
+    <p style="margin-bottom: 0;">"Thank you for that. Before I look up shelters, let me make sure I have your information correct..."</p>
+</div>
+
+<h3>If Caller is Vague</h3>
+<p>Ask clarifying questions without making them feel interrogated:</p>
+<div class="callout callout-gray">
+    <p style="margin-bottom: 0;">"And how many people total would need shelter with you?"</p>
+</div>
+
+<h3>If Caller Refuses to Answer</h3>
+<p>Note it and move on—don't press repeatedly:</p>
+<div class="callout callout-gray">
+    <p style="margin-bottom: 0;">"That's okay, we can continue. What else can I help with?"</p>
+</div>
+
+<h2>Natural Transitions for Missing Data</h2>
+<ul>
+    <li><strong>Location:</strong> "So I can find the closest resources, what city or ZIP code are you in?"</li>
+    <li><strong>Household:</strong> "Will anyone else be with you? I want to make sure we have space for everyone."</li>
+    <li><strong>Medical needs:</strong> "Does anyone in your group have medical conditions I should note for shelter staff?"</li>
+    <li><strong>Pets:</strong> "Do you have any pets that need to come with you? Some shelters accept animals."</li>
+    <li><strong>Contact:</strong> "What's a good number to reach you if we need to follow up?"</li>
+</ul>
+
+<!-- THIRD-PARTY REPORTS -->
+<div class="page-break"></div>
+<h1 id="third-party">8. Third-Party Fire Reports</h1>
+
+<p class="lead">
+    A very common call type: Fire departments, neighbors, or witnesses calling ON BEHALF of fire victims. The system has specialized flows for these scenarios.
+</p>
+
+<h2>Caller Type Identification</h2>
+<div class="callout callout-blue">
+    <p style="margin-bottom: 0;">"Are you the person affected by the fire, or are you calling to report a fire affecting someone else?"</p>
+</div>
+
+<h2>Information to Collect</h2>
+
+<h3>Fire Location</h3>
+<ul>
+    <li>Full street address of the fire</li>
+    <li>City, state, ZIP code</li>
+    <li>Type of structure (single-family, apartment, mobile home)</li>
+    <li>Apartment/unit number if applicable</li>
+    <li>Cross street or landmark</li>
+</ul>
+
+<h3>Fire Details</h3>
+<ul>
+    <li>When did the fire occur? (date and time)</li>
+    <li>Is the fire department still on scene?</li>
+    <li>Damage level: total loss, partial, smoke/water only</li>
+    <li>Are residents displaced or able to stay?</li>
+    <li>Any injuries?</li>
+</ul>
+
+<h3>Affected Families (For EACH Household)</h3>
+<ul>
+    <li>Names of adults</li>
+    <li>Number of adults and children (with ages)</li>
+    <li>Elderly (65+) or medical needs</li>
+    <li>Pets (type and number)</li>
+    <li>Contact phone number</li>
+    <li>Current location (on scene, with family, need shelter)</li>
+    <li>Primary language spoken</li>
+</ul>
+
+<h3>Caller Information</h3>
+<ul>
+    <li>Caller's name and role (FD, neighbor, witness, property manager)</li>
+    <li>Caller's phone number</li>
+    <li>Fire department incident number (if from FD)</li>
+</ul>
+
+<h2>Volunteer Response Messaging</h2>
+<div class="callout callout-green">
+    <h4>Standard Response</h4>
+    <p>"We typically send two trained volunteers to meet with the affected families. Our volunteers can provide immediate assistance like emergency funds for food, clothing, and shelter. Is there a good time and location for our volunteers to meet with the family?"</p>
+</div>
+
+<h2>Multi-Family Fire Handling</h2>
+<p>For apartment buildings or duplexes:</p>
+<ul>
+    <li>"How many units were affected?"</li>
+    <li>"Do you have information on all the affected families, or just some?"</li>
+    <li>"We'll send enough volunteers to assist all displaced families."</li>
+    <li>Gather SEPARATE information for each affected household</li>
+</ul>
+
+<!-- SAFETY GUIDANCE -->
+<div class="page-break"></div>
+<h1 id="safety-guidance">9. Emergency Safety Guidance</h1>
+
+<p class="lead">
+    The AI provides simple, actionable safety guidance. Instructions are kept SHORT—one step at a time, no complex multi-part instructions.
+</p>
+
+<h2>Flooding</h2>
+<ul>
+    <li>"Move to higher ground now—upstairs or the highest floor."</li>
+    <li>"Do NOT walk or drive through floodwater. Turn around, don't drown."</li>
+    <li>"Turn off electricity at the main breaker if you can reach it safely."</li>
+    <li>"If water is rising fast, get to the roof and call 9-1-1."</li>
+    <li>"If trapped in a car in rising water, unbuckle, open the window, climb out."</li>
+</ul>
+
+<h2>Fire / Wildfire</h2>
+<ul>
+    <li>"Leave now. Don't gather belongings—just go."</li>
+    <li>"Close doors behind you as you leave—this slows the fire."</li>
+    <li>"Check door handles before opening. Hot handle means fire on the other side."</li>
+    <li>"If there's smoke, crawl low—air is cleaner near the floor."</li>
+    <li>"If trapped: close the door, stuff towels under it, call 9-1-1, wave from window."</li>
+</ul>
+
+<h2>Gas Leak</h2>
+<ul>
+    <li>"Leave the building immediately. Don't turn any switches on or off."</li>
+    <li>"Don't use your phone until you're outside and away from the building."</li>
+    <li>"Don't start your car if it's in the garage."</li>
+    <li>"Once outside, call 9-1-1 and your gas company."</li>
+</ul>
+
+<h2>Electrical Hazards</h2>
+<ul>
+    <li>"Stay away from downed power lines—at least 35 feet."</li>
+    <li>"If power lines are on your car, stay inside and call 9-1-1."</li>
+    <li>"Don't touch anything electrical if you're standing in water."</li>
+    <li>"If someone is being shocked, don't touch them—turn off the power first."</li>
+</ul>
+
+<h2>Tornado</h2>
+<ul>
+    <li>"Get to the lowest floor, interior room, away from windows."</li>
+    <li>"A bathroom or closet in the center of the building is safest."</li>
+    <li>"If you're in a mobile home, leave and find a sturdy building."</li>
+    <li>"If outside with no shelter, lie flat in a ditch and cover your head."</li>
+</ul>
+
+<!-- SHELTER INFORMATION -->
+<div class="page-break"></div>
+<h1 id="shelter-info">10. Shelter Information System</h1>
+
+<h2>Tampa Bay Area Shelters (Hurricane Milton Response)</h2>
+
+<table>
+    <tr>
+        <th>Shelter</th>
+        <th>Address</th>
+        <th>Pets</th>
+        <th>Medical</th>
+        <th>ADA</th>
+    </tr>
+    <tr>
+        <td>Hillsborough High School</td>
+        <td>5000 N Central Ave, Tampa 33603</td>
+        <td style="color: green;">Yes</td>
+        <td style="color: green;">Yes</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+    <tr>
+        <td>Gaither High School</td>
+        <td>16200 N Dale Mabry Hwy, Tampa 33618</td>
+        <td style="color: red;">No</td>
+        <td style="color: red;">No</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+    <tr>
+        <td>St. Petersburg High</td>
+        <td>2501 5th Ave N, St. Petersburg 33713</td>
+        <td style="color: red;">No</td>
+        <td style="color: green;">Yes</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+    <tr>
+        <td>Lakewood High School</td>
+        <td>1400 54th Ave S, St. Petersburg 33705</td>
+        <td style="color: green;">Yes</td>
+        <td style="color: red;">No</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+    <tr>
+        <td>Clearwater High School</td>
+        <td>540 S Hercules Ave, Clearwater 33764</td>
+        <td style="color: red;">No</td>
+        <td style="color: green;">Yes</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+    <tr>
+        <td>Countryside High School</td>
+        <td>3000 FL-580, Clearwater 34761</td>
+        <td style="color: red;">No</td>
+        <td style="color: red;">No</td>
+        <td style="color: green;">Yes</td>
+    </tr>
+</table>
+
+<h2>Shelter Recommendation Logic</h2>
+
+<h3>Matching Criteria</h3>
+<ol>
+    <li><strong>Pets:</strong> If caller has pets → recommend Hillsborough or Lakewood only</li>
+    <li><strong>Medical needs:</strong> If caller has oxygen, mobility, or medical equipment → recommend medical shelters</li>
+    <li><strong>Location:</strong> Recommend nearest shelter to caller's current location</li>
+</ol>
+
+<h3>Standard Guidance</h3>
+<div class="callout callout-gray">
+    <p style="margin-bottom: 0;">"Bring photo ID, essential medications, phone chargers, and comfort items. Cots and meals are provided. Pets are only allowed at designated pet-friendly shelters."</p>
+</div>
+
+<!-- MULTILINGUAL -->
+<div class="page-break"></div>
+<h1 id="multilingual">11. Multilingual Support</h1>
+
+<p class="lead">
+    CrisisConnect provides instant language detection and seamless switching—no IVR menus, no "Press 1 for Spanish" delays.
+</p>
+
+<h2>Supported Languages</h2>
+<table>
+    <tr>
+        <th>Language</th>
+        <th>Native Name</th>
+        <th>Status</th>
+    </tr>
+    <tr>
+        <td>English</td>
+        <td>English</td>
+        <td>Full Support</td>
+    </tr>
+    <tr>
+        <td>Spanish</td>
+        <td>Español</td>
+        <td>Full Support</td>
+    </tr>
+    <tr>
+        <td>Haitian Creole</td>
+        <td>Kreyòl Ayisyen</td>
+        <td>Full Support</td>
+    </tr>
+    <tr>
+        <td>Vietnamese</td>
+        <td>Tiếng Việt</td>
+        <td>Full Support</td>
+    </tr>
+    <tr>
+        <td>Chinese</td>
+        <td>中文</td>
+        <td>Full Support</td>
+    </tr>
+    <tr>
+        <td>Arabic</td>
+        <td>العربية</td>
+        <td>Full Support</td>
+    </tr>
+</table>
+
+<h2>Language Detection Flow</h2>
+<ol>
+    <li>Caller speaks in any language</li>
+    <li>Gemini Live API detects language from audio stream</li>
+    <li>AI responds in detected language immediately</li>
+    <li>If caller switches languages mid-call, AI follows the switch</li>
+    <li>All protocols and scripts are applied in the caller's language</li>
+</ol>
+
+<div class="callout callout-green">
+    <h4>Industry First</h4>
+    <p style="margin-bottom: 0;">Traditional disaster hotlines require callers to navigate IVR menus to select their language, costing precious seconds in emergencies. CrisisConnect eliminates this barrier entirely—triage begins the millisecond audio is received, regardless of dialect.</p>
+</div>
+
+<!-- DATA CAPTURE -->
+<div class="page-break"></div>
+<h1 id="data-capture">12. Data Capture & Dashboard Integration</h1>
+
+<h2>Captured Data Fields</h2>
+
+<table>
+    <tr>
+        <th>Field</th>
+        <th>Type</th>
+        <th>Purpose</th>
+    </tr>
+    <tr>
+        <td>Call ID</td>
+        <td>String (UUID)</td>
+        <td>Unique identifier for tracking</td>
+    </tr>
+    <tr>
+        <td>Start Time</td>
+        <td>Timestamp</td>
+        <td>Call initiation time</td>
+    </tr>
+    <tr>
+        <td>End Time</td>
+        <td>Timestamp</td>
+        <td>Call termination time</td>
+    </tr>
+    <tr>
+        <td>Duration</td>
+        <td>Integer (seconds)</td>
+        <td>Total call length</td>
+    </tr>
+    <tr>
+        <td>Caller Name</td>
+        <td>String</td>
+        <td>If provided</td>
+    </tr>
+    <tr>
+        <td>Contact Phone</td>
+        <td>String</td>
+        <td>Callback number</td>
+    </tr>
+    <tr>
+        <td>Location</td>
+        <td>String</td>
+        <td>City, ZIP, or address</td>
+    </tr>
+    <tr>
+        <td>Disaster Type</td>
+        <td>Enum</td>
+        <td>Hurricane, Fire, Flood, etc.</td>
+    </tr>
+    <tr>
+        <td>Household Size</td>
+        <td>Integer</td>
+        <td>Total people affected</td>
+    </tr>
+    <tr>
+        <td>Children Under 18</td>
+        <td>Integer</td>
+        <td>Vulnerable population count</td>
+    </tr>
+    <tr>
+        <td>Adults 65+</td>
+        <td>Integer</td>
+        <td>Elderly population count</td>
+    </tr>
+    <tr>
+        <td>Has Medical Needs</td>
+        <td>Boolean</td>
+        <td>Medical shelter routing</td>
+    </tr>
+    <tr>
+        <td>Has Pets</td>
+        <td>Boolean</td>
+        <td>Pet-friendly shelter routing</td>
+    </tr>
+    <tr>
+        <td>Pet Count</td>
+        <td>Integer</td>
+        <td>Number of animals</td>
+    </tr>
+    <tr>
+        <td>Needs List</td>
+        <td>Array</td>
+        <td>Shelter, food, financial, etc.</td>
+    </tr>
+    <tr>
+        <td>Shelter Referred</td>
+        <td>String</td>
+        <td>Assigned shelter name</td>
+    </tr>
+    <tr>
+        <td>Call Outcome</td>
+        <td>Enum</td>
+        <td>Resolved, Referred, Callback</td>
+    </tr>
+    <tr>
+        <td>Language</td>
+        <td>String</td>
+        <td>Detected language code</td>
+    </tr>
+    <tr>
+        <td>Transcript</td>
+        <td>Array</td>
+        <td>Full conversation history</td>
+    </tr>
+</table>
+
+<h2>Export Format</h2>
+<p>Data exports as JSON for integration with:</p>
+<ul>
+    <li><strong>ArcGIS FeatureServer:</strong> Geo-spatial mapping and heat maps</li>
+    <li><strong>Google Maps:</strong> Incident visualization</li>
+    <li><strong>Custom Dashboards:</strong> Real-time operational awareness</li>
+    <li><strong>Volunteer Dispatch Systems:</strong> Automated case assignment</li>
+</ul>
+
+<h3>Sample Export</h3>
+<pre><code>{
+  "callId": "CALL-1703505600-ABC123XYZ",
+  "startTime": "2024-12-25T10:00:00Z",
+  "endTime": "2024-12-25T10:08:32Z",
+  "location": "Tampa, FL 33603",
+  "disasterType": "hurricane",
+  "householdSize": 4,
+  "childrenUnder18": 2,
+  "hasMedicalNeeds": true,
+  "hasPets": true,
+  "petCount": 1,
+  "needs": ["shelter", "food", "medical"],
+  "shelterReferred": "Hillsborough High School",
+  "callOutcome": "resolved",
+  "language": "es",
+  "transcript": [...]
+}</code></pre>
+
+<!-- TECH STACK -->
+<div class="page-break"></div>
+<h1 id="tech-stack">13. Technology Stack</h1>
+
+<h2>Frontend</h2>
+<table>
+    <tr>
+        <th>Technology</th>
+        <th>Version</th>
+        <th>Purpose</th>
+    </tr>
+    <tr>
+        <td>React</td>
+        <td>18.x</td>
+        <td>UI framework</td>
+    </tr>
+    <tr>
+        <td>TypeScript</td>
+        <td>5.x</td>
+        <td>Type safety</td>
+    </tr>
+    <tr>
+        <td>Vite</td>
+        <td>5.x</td>
+        <td>Build tooling</td>
+    </tr>
+    <tr>
+        <td>Tailwind CSS</td>
+        <td>3.x</td>
+        <td>Styling</td>
+    </tr>
+    <tr>
+        <td>Lucide React</td>
+        <td>Latest</td>
+        <td>Icons</td>
+    </tr>
+</table>
+
+<h2>AI & Voice</h2>
+<table>
+    <tr>
+        <th>Technology</th>
+        <th>Version</th>
+        <th>Purpose</th>
+    </tr>
+    <tr>
+        <td>Google Gemini</td>
+        <td>2.0 Flash (Exp)</td>
+        <td>Language model</td>
+    </tr>
+    <tr>
+        <td>Gemini Live API</td>
+        <td>v1beta</td>
+        <td>Bidirectional audio streaming</td>
+    </tr>
+    <tr>
+        <td>Web Audio API</td>
+        <td>Browser native</td>
+        <td>Audio capture/playback</td>
+    </tr>
+    <tr>
+        <td>WebSocket</td>
+        <td>WSS</td>
+        <td>Real-time transport</td>
+    </tr>
+</table>
+
+<h2>Infrastructure</h2>
+<table>
+    <tr>
+        <th>Service</th>
+        <th>Provider</th>
+        <th>Purpose</th>
+    </tr>
+    <tr>
+        <td>Hosting (RescueLens)</td>
+        <td>Vercel</td>
+        <td>Edge deployment, CDN</td>
+    </tr>
+    <tr>
+        <td>Hosting (AI Studio Demo)</td>
+        <td>Google Cloud Run</td>
+        <td>Container hosting</td>
+    </tr>
+    <tr>
+        <td>API Keys</td>
+        <td>Google AI Studio</td>
+        <td>Gemini API authentication</td>
+    </tr>
+    <tr>
+        <td>Maps</td>
+        <td>Google Maps Platform</td>
+        <td>3D visualization (RescueLens)</td>
+    </tr>
+</table>
+
+<!-- DEPLOYMENT -->
+<div class="page-break"></div>
+<h1 id="deployment">14. Deployment & Configuration</h1>
+
+<h2>Environment Variables</h2>
+<pre><code># Required for Gemini Live
+VITE_GEMINI_API_KEY=your_gemini_api_key
+
+# Required for Google Maps (3D Globe)
+VITE_GOOGLE_MAPS_API_KEY=your_maps_api_key</code></pre>
+
+<h2>Vercel Deployment</h2>
+<ol>
+    <li>Connect GitHub repository to Vercel</li>
+    <li>Add environment variables in Vercel dashboard</li>
+    <li>Deploy with automatic builds on push to main</li>
+</ol>
+
+<h2>Local Development</h2>
+<pre><code># Install dependencies
+npm install
+
+# Start development server
+VITE_GEMINI_API_KEY=xxx VITE_GOOGLE_MAPS_API_KEY=xxx npm run dev
+
+# Build for production
+npm run build</code></pre>
+
+<h2>API Key Setup</h2>
+<ol>
+    <li>Visit <a href="https://aistudio.google.com/apikey">Google AI Studio</a></li>
+    <li>Create a new API key</li>
+    <li>Enable Gemini 2.0 Flash model access</li>
+    <li>Add key to Vercel environment variables</li>
+    <li>Redeploy application</li>
+</ol>
+
+<!-- APPENDIX: FUTURE OPPORTUNITIES -->
+<div class="page-break"></div>
+<h1 id="future-opportunities">Appendix A: Future Expansion Opportunities</h1>
+
+<p class="lead">
+    The following concepts represent potential directions for evolving CrisisConnect from a proof-of-concept into a comprehensive disaster response platform. These ideas span AI enhancements, integrations, operational capabilities, and new use cases.
+</p>
+
+<h2>AI & Voice Technology Enhancements</h2>
+
+<div class="callout callout-blue">
+    <h4>1. Emotion Detection & Adaptive Response</h4>
+    <p>Implement real-time sentiment analysis to detect caller emotional states (panic, grief, frustration) and dynamically adjust AI tone, pacing, and response strategies. High-distress calls could automatically prioritize and flag for human callback.</p>
+</div>
+
+<div class="callout callout-blue">
+    <h4>2. Voice Biometric Authentication</h4>
+    <p>Allow returning callers to be identified by voice patterns, enabling faster intake for repeat disaster victims and reducing fraud risk while maintaining privacy compliance.</p>
+</div>
+
+<div class="callout callout-blue">
+    <h4>3. Real-Time Translation Overlay</h4>
+    <p>Enable a human supervisor to join calls with automatic real-time translation, allowing English-speaking staff to assist non-English callers seamlessly.</p>
+</div>
+
+<div class="callout callout-blue">
+    <h4>4. Custom Voice Cloning for Regional Dialects</h4>
+    <p>Train custom voice models that match regional accents and dialects (Southern, Cajun, Puerto Rican Spanish) to improve caller comfort and comprehension.</p>
+</div>
+
+<h2>System Integrations</h2>
+
+<div class="callout callout-gray">
+    <h4>5. Direct 911/PSAP Integration</h4>
+    <p>Partner with Public Safety Answering Points (PSAPs) for warm handoffs—when CrisisConnect detects an emergency, it could connect directly to 911 with caller data pre-populated.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>6. FEMA DisasterAssistance.gov API</h4>
+    <p>Integrate with FEMA's Individual Assistance API to help callers apply for federal disaster assistance directly through the call flow.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>7. Insurance Carrier Partnerships</h4>
+    <p>Connect with major insurance carriers' claims APIs to initiate claims intake during the call, reducing survivor burden for dual reporting.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>8. Safe and Well Direct Registration</h4>
+    <p>Enable callers to register on Safe and Well during the call with automatic data population—no separate website visit needed.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>9. Volunteer Dispatch System Integration</h4>
+    <p>Direct integration with volunteer management systems to automatically dispatch available volunteers based on case type and location.</p>
+</div>
+
+<h2>Expanded Channels & Platforms</h2>
+
+<div class="callout callout-green">
+    <h4>10. SMS/Text-Based Intake</h4>
+    <p>Offer text message intake for callers in noisy environments, those with hearing impairments, or when voice calls are impractical (e.g., hiding during home invasion).</p>
+</div>
+
+<div class="callout callout-green">
+    <h4>11. WhatsApp & Messaging Platform Integration</h4>
+    <p>Deploy CrisisConnect on WhatsApp, Facebook Messenger, and other platforms popular in immigrant communities for greater accessibility.</p>
+</div>
+
+<div class="callout callout-green">
+    <h4>12. Video Call Capability</h4>
+    <p>Add optional video intake for damage documentation—callers could show their damaged home in real-time, with AI extracting damage assessments.</p>
+</div>
+
+<div class="callout callout-green">
+    <h4>13. Mobile App with Push Notifications</h4>
+    <p>Native iOS/Android app with shelter status updates, case progress tracking, and proactive outreach to survivors in their area.</p>
+</div>
+
+<div class="callout callout-green">
+    <h4>14. Smart Speaker Integration</h4>
+    <p>Deploy on Alexa and Google Home devices for hands-free disaster reporting—particularly valuable when caller is injured or mobility-impaired.</p>
+</div>
+
+<h2>Operational Capabilities</h2>
+
+<div class="callout callout-red">
+    <h4>15. Automated Callback Scheduling</h4>
+    <p>Allow callers to schedule callbacks at convenient times, with AI automatically calling back with status updates or to collect additional information.</p>
+</div>
+
+<div class="callout callout-red">
+    <h4>16. Proactive Outbound Campaigns</h4>
+    <p>AI-powered outbound calls to registered survivors for welfare checks, case updates, or to notify of new available resources.</p>
+</div>
+
+<div class="callout callout-red">
+    <h4>17. Multi-Disaster Concurrent Operations</h4>
+    <p>Support multiple simultaneous disasters with automatic geographic routing and disaster-specific protocol loading.</p>
+</div>
+
+<div class="callout callout-red">
+    <h4>18. Shelter Capacity Real-Time Sync</h4>
+    <p>Live integration with shelter management systems to provide accurate capacity counts and automatically redirect when shelters reach capacity.</p>
+</div>
+
+<h2>Analytics & Intelligence</h2>
+
+<div class="callout callout-gray">
+    <h4>19. Predictive Needs Modeling</h4>
+    <p>Use call data patterns to predict resource needs—if calls from a ZIP code spike, automatically pre-position volunteers and resources.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>20. Real-Time Disaster Heat Maps</h4>
+    <p>Generate live geographic visualizations of incoming calls, damage reports, and resource needs for EOC situational awareness.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>21. Quality Assurance Scoring</h4>
+    <p>AI-powered analysis of call recordings to score protocol adherence, empathy levels, and data completeness for continuous improvement.</p>
+</div>
+
+<div class="callout callout-gray">
+    <h4>22. Trend Detection & Anomaly Alerts</h4>
+    <p>Automatically detect unusual patterns (e.g., cluster of carbon monoxide calls, generator-related injuries) and alert operations leadership.</p>
+</div>
+
+<h2>Extended Use Cases</h2>
+
+<div class="callout callout-blue">
+    <h4>23. Blood Donation Appointment Scheduling</h4>
+    <p>Extend the platform to handle blood donation inquiries, appointment booking, and eligibility screening via voice AI.</p>
+</div>
+
+<div class="callout callout-blue">
+    <h4>24. Training Course Registration</h4>
+    <p>Voice-based registration for CPR, first aid, and disaster preparedness training classes with automatic calendar integration.</p>
+</div>
+
+<div class="callout callout-blue">
+    <h4>25. Volunteer Onboarding</h4>
+    <p>AI-guided volunteer registration and orientation, answering FAQs and collecting initial background check information.</p>
+</div>
+
+<h2>Security & Compliance</h2>
+
+<div class="callout callout-red">
+    <h4>26. HIPAA-Compliant Medical Intake</h4>
+    <p>Enhanced security and compliance features to handle medical information for health-related disaster services.</p>
+</div>
+
+<div class="callout callout-red">
+    <h4>27. Fraud Detection System</h4>
+    <p>ML-based fraud detection analyzing call patterns, location mismatches, and repeated claims to flag suspicious activity.</p>
+</div>
+
+<div class="callout callout-red">
+    <h4>28. Complete Audit Trail</h4>
+    <p>Comprehensive logging and audit capabilities for regulatory compliance and legal discovery needs.</p>
+</div>
+
+<h2>Accessibility & Inclusion</h2>
+
+<div class="callout callout-green">
+    <h4>29. ASL Video Relay Service</h4>
+    <p>Integration with video relay services for deaf callers using American Sign Language interpreters.</p>
+</div>
+
+<div class="callout callout-green">
+    <h4>30. Simplified Cognitive Interface</h4>
+    <p>Alternative conversation flows optimized for callers with cognitive disabilities, using simpler language and more patient pacing.</p>
+</div>
+
+<div style="margin-top: 2rem; padding: 1.5rem; background: var(--slate-100); border-radius: 8px; text-align: center;">
+    <p style="font-size: 0.9rem; color: var(--slate-600); margin-bottom: 0.5rem;">
+        <strong>Note:</strong> These concepts represent exploratory ideas for future development phases.
+    </p>
+    <p style="font-size: 0.85rem; color: var(--slate-500); margin-bottom: 0;">
+        Prioritization would require stakeholder input, feasibility analysis, and alignment with organizational strategy.
+    </p>
+</div>
+
+<!-- FOOTER -->
+<div class="document-footer">
+    <p><strong>CrisisConnect Technical Documentation</strong></p>
+    <p>Beta Prototype v2.6 | December 2025</p>
+    <p>Disaster Response Innovation Suite</p>
+    <p style="margin-top: 1rem;">
+        <em>PROTOTYPE - NOT FOR PRODUCTION USE</em>
+    </p>
+</div>
+
+</body>
+</html>
