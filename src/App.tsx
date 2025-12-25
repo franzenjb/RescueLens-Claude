@@ -26,7 +26,6 @@ function App() {
     addReport,
     deleteReport,
     exportData,
-    importData,
   } = useReports();
 
   // Initialize Claude with saved API key on mount
@@ -66,15 +65,6 @@ function App() {
       setPendingTool(null);
     }
     setShowSplash(false);
-  };
-
-  const handleImport = async (file: File) => {
-    try {
-      const count = await importData(file);
-      alert(`Successfully imported ${count} reports`);
-    } catch (err) {
-      alert('Failed to import file. Please check the format.');
-    }
   };
 
   const renderToolContent = () => {
@@ -131,9 +121,6 @@ function App() {
         activeTab={activeTab}
         onToolChange={handleToolChange}
         onTabChange={setActiveTab}
-        onExport={exportData}
-        onImport={handleImport}
-        reportCount={reports.length}
       >
         {renderToolContent()}
       </Layout>

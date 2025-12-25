@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, History, Map, BarChart3, Settings, Download, Upload, Shield, Phone, Radar, Info } from 'lucide-react';
+import { Camera, History, Map, BarChart3, Settings, Shield, Phone, Radar, Info } from 'lucide-react';
 import { tools, aboutTool } from '../tools/registry';
 
 interface LayoutProps {
@@ -8,9 +8,6 @@ interface LayoutProps {
   activeTab: string;
   onToolChange: (tool: string) => void;
   onTabChange: (tab: string) => void;
-  onExport: () => void;
-  onImport: (file: File) => void;
-  reportCount: number;
 }
 
 // RescueLens sub-tabs
@@ -36,24 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({
   activeTab,
   onToolChange,
   onTabChange,
-  onExport,
-  onImport,
-  reportCount,
 }) => {
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImport(file);
-      e.target.value = '';
-    }
-  };
-
   const allTools = [...tools, aboutTool];
 
   return (
@@ -77,40 +57,8 @@ export const Layout: React.FC<LayoutProps> = ({
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Reserved for future use */}
             <div className="flex items-center gap-4">
-              {activeTool === 'rescuelens' && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
-                  <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  <span className="text-xs font-bold text-white">{reportCount} Reports</span>
-                </div>
-              )}
-
-              {activeTool === 'rescuelens' && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={onExport}
-                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                    title="Export Data"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={handleImportClick}
-                    className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                    title="Import Data"
-                  >
-                    <Upload className="w-4 h-4" />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>
