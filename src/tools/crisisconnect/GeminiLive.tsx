@@ -614,10 +614,10 @@ ${lessons.map((lesson, i) => `${i + 1}. ${lesson}`).join('\n')}
 
       const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
       const issues = issuesMatch
-        ? issuesMatch[1].split('\n').filter(l => l.trim().startsWith('-')).map(l => l.replace(/^-\s*/, '').trim())
+        ? issuesMatch[1].split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '').trim())
         : [];
       const newLessons = lessonsMatch
-        ? lessonsMatch[1].split('\n').filter(l => l.trim().startsWith('-')).map(l => l.replace(/^-\s*/, '').trim())
+        ? lessonsMatch[1].split('\n').filter((l: string) => l.trim().startsWith('-')).map((l: string) => l.replace(/^-\s*/, '').trim())
         : [];
 
       const evaluation: CriticEvaluation = {
