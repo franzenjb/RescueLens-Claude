@@ -431,9 +431,10 @@ export const GeminiLive: React.FC = () => {
   const isPlayingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Refs to fix stale closure issue in disconnect callback
+  // Refs to fix stale closure issue in callbacks
   const messagesRef = useRef<Message[]>([]);
   const callerDataRef = useRef<CallerData | null>(null);
+  const currentTranscriptRef = useRef<string>('');
 
   // Auto-scroll messages
   useEffect(() => {
@@ -448,6 +449,10 @@ export const GeminiLive: React.FC = () => {
   useEffect(() => {
     callerDataRef.current = callerData;
   }, [callerData]);
+
+  useEffect(() => {
+    currentTranscriptRef.current = currentTranscript;
+  }, [currentTranscript]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -563,6 +568,7 @@ export const GeminiLive: React.FC = () => {
                 }
                 if (part.text) {
                   setCurrentTranscript(prev => prev + part.text);
+                  currentTranscriptRef.current += part.text;
                 }
               }
             }
@@ -570,13 +576,17 @@ export const GeminiLive: React.FC = () => {
             // Turn complete
             if (content.turnComplete) {
               setIsModelSpeaking(false);
-              if (currentTranscript) {
+              // Use ref to get latest transcript value (fixes stale closure)
+              const transcript = currentTranscriptRef.current;
+              if (transcript) {
+                console.log(`[Self-Improving] Model turn complete, saving transcript: "${transcript.substring(0, 50)}..."`);
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: currentTranscript,
+                  text: transcript,
                   timestamp: new Date()
                 }]);
                 setCurrentTranscript('');
+                currentTranscriptRef.current = '';
               }
             }
           }
