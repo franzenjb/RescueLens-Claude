@@ -514,14 +514,17 @@ export const GeminiLive: React.FC = () => {
           setup: {
             model: MODEL,
             generationConfig: {
-              responseModalities: ['AUDIO', 'TEXT'], // Include TEXT for transcript capture
+              responseModalities: ['AUDIO'],
               speechConfig: {
                 voiceConfig: {
                   prebuiltVoiceConfig: {
                     voiceName: 'Aoede' // Warm, professional female voice
                   }
                 }
-              }
+              },
+              // Enable transcription for self-improving loop
+              outputAudioTranscription: {},
+              inputAudioTranscription: {}
             },
             systemInstruction: {
               parts: [{ text: enhancedPrompt }]
@@ -591,11 +594,23 @@ export const GeminiLive: React.FC = () => {
             }
           }
 
-          // Transcription of user input
+          // Transcription of user input (from inputAudioTranscription config)
           if (data.serverContent?.inputTranscription?.text) {
             const text = data.serverContent.inputTranscription.text;
+            console.log(`[Self-Improving] User input transcription: "${text.substring(0, 50)}..."`);
             setMessages(prev => [...prev, {
               role: 'user',
+              text,
+              timestamp: new Date()
+            }]);
+          }
+
+          // Transcription of model output (from outputAudioTranscription config)
+          if (data.serverContent?.outputTranscription?.text) {
+            const text = data.serverContent.outputTranscription.text;
+            console.log(`[Self-Improving] Model output transcription: "${text.substring(0, 50)}..."`);
+            setMessages(prev => [...prev, {
+              role: 'model',
               text,
               timestamp: new Date()
             }]);
