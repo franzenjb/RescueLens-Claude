@@ -431,10 +431,23 @@ export const GeminiLive: React.FC = () => {
   const isPlayingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Refs to fix stale closure issue in disconnect callback
+  const messagesRef = useRef<Message[]>([]);
+  const callerDataRef = useRef<CallerData | null>(null);
+
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, currentTranscript]);
+
+  // Sync refs with state to fix stale closure issue
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    callerDataRef.current = callerData;
+  }, [callerData]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -616,19 +629,25 @@ export const GeminiLive: React.FC = () => {
       audioContextRef.current = null;
     }
 
+    // Use refs to get latest values (fixes stale closure issue)
+    const currentMessages = messagesRef.current;
+    const currentCallerData = callerDataRef.current;
+
+    console.log(`[Self-Improving] Disconnect called - messages: ${currentMessages.length}, callerData: ${currentCallerData?.callId || 'null'}`);
+
     // Finalize call data
-    const finalCallerData = callerData ? {
-      ...callerData,
+    const finalCallerData = currentCallerData ? {
+      ...currentCallerData,
       endTime: new Date(),
-      transcript: messages
+      transcript: currentMessages
     } : null;
 
     setCallerData(finalCallerData);
 
     // SELF-IMPROVING LOOP: Save transcript for later evaluation
-    if (finalCallerData && messages.length > 0) {
+    if (finalCallerData && currentMessages.length > 0) {
       try {
-        await saveTranscript(finalCallerData.callId, messages, finalCallerData);
+        await saveTranscript(finalCallerData.callId, currentMessages, finalCallerData);
         console.log(`[Self-Improving] Transcript saved: ${finalCallerData.callId}`);
 
         // Refresh stats
@@ -637,13 +656,15 @@ export const GeminiLive: React.FC = () => {
       } catch (err) {
         console.error('Failed to save transcript:', err);
       }
+    } else {
+      console.log(`[Self-Improving] Transcript NOT saved - finalCallerData: ${!!finalCallerData}, messages: ${currentMessages.length}`);
     }
 
     setIsConnected(false);
     setIsMicActive(false);
     setIsModelSpeaking(false);
     audioQueueRef.current = [];
-  }, [messages, callerData]);
+  }, []); // No dependencies - using refs for latest values
 
   const startMicrophone = async () => {
     try {
