@@ -800,12 +800,14 @@ export const GeminiLive: React.FC = () => {
       return;
     }
 
-    // Get Claude API key from settings
+    // Get Claude API key - prefer env var, fallback to localStorage settings
+    const envApiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
     const settings = localStorage.getItem('settings');
-    const apiKey = settings ? JSON.parse(settings)?.apiKey : null;
+    const settingsApiKey = settings ? JSON.parse(settings)?.apiKey : null;
+    const apiKey = envApiKey || settingsApiKey;
 
     if (!apiKey) {
-      setError('Claude API key required for Critic evaluation. Set it in Settings.');
+      setError('Claude API key required for Critic evaluation. Set VITE_ANTHROPIC_API_KEY or configure in Settings.');
       return;
     }
 
