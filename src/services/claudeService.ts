@@ -36,13 +36,14 @@ COMMON EXAMPLES:
 - Vinyl siding with visible dirt/sediment line
 - Brick with efflorescence or mud marks
 
-HOW TO MEASURE HEIGHT:
-- Bottom of windows = approximately 30-36 inches
-- If flood line reaches window sills or higher = ABOVE 36 inches = MAJOR
-- If flood line is well below windows = BELOW 36 inches = MINOR
+HOW TO MEASURE HEIGHT (per FEMA Damage Assessment Operations Manual):
+- Electrical outlets = approximately 12-18 inches from floor
+- Water line BELOW 18 inches on first floor = MINOR
+- Water line 18 INCHES OR HIGHER on first floor = MAJOR
+- Water line ABOVE electrical outlets = MAJOR
 
-⚠️ THIS OVERRIDES EVERYTHING: If you see flood staining on the siding at window height → MAJOR
-Do NOT classify as "AFFECTED" - flood-damaged homes are MINIMUM MINOR, and MAJOR if above 36".
+⚠️ THIS OVERRIDES EVERYTHING: If you see flood staining above outlet height (18"+) → MAJOR
+Do NOT classify flood-damaged homes as "AFFECTED" - if water entered living space, minimum is MINOR.
 
 🏠 CRITICAL RULE: ONLY THE PRIMARY DWELLING COUNTS
 FEMA PDA assessment is ONLY for the PRIMARY DWELLING (the main house).
@@ -122,14 +123,15 @@ Now look at WHERE debris is located:
    - Missing shingles (but roof deck intact)
    - Broken windows, damaged siding
    - Tree touching/leaning on structure (not through it)
-   - FLOOD: Water line visible INSIDE house but LESS than 36 inches (3 feet) high
+   - FLOOD: Water line on first floor BELOW 18 inches
 
 4. MAJOR - Significant Structural Damage (Partial)
    - Hole in roof or wall with interior visible
    - Tree/debris penetrated through structure
    - Partial roof collapse (but some walls standing)
    - Structure damaged but still recognizable as a building
-   - FLOOD: Water line visible INSIDE house MORE than 36 inches (3 feet) high
+   - FLOOD: Water line 18 INCHES OR HIGHER on first floor
+   - FLOOD: Water line ABOVE electrical outlets
 
 5. DESTROYED - Total Loss (Use when building form is GONE)
    ✓ Structure has COLLAPSED - no longer looks like a building
@@ -152,10 +154,11 @@ Now look at WHERE debris is located:
 
 ✅ QUICK DECISION GUIDE:
 - Structure looks NORMAL with debris in yard? → AFFECTED
+- Accessory structure damaged (patio, garage, shed) but house intact? → AFFECTED
 - Structure has HOLES but is still standing? → MAJOR
 - Structure has COLLAPSED into debris pile? → DESTROYED
-- FLOOD water line INSIDE house < 36 inches? → MINOR
-- FLOOD water line INSIDE house > 36 inches? → MAJOR
+- FLOOD water line on first floor < 18 inches? → MINOR
+- FLOOD water line on first floor ≥ 18 inches? → MAJOR
 
 RESPONSE FORMAT: Valid JSON only.`;
 
@@ -217,8 +220,9 @@ export async function analyzeImage(base64Image: string): Promise<DamageAnalysis>
 Before choosing a severity level, you MUST answer these questions IN ORDER:
 
 Q0: ⚠️ FLOOD CHECK FIRST ⚠️ - Look at the SIDING/EXTERIOR WALLS. Is there a visible HORIZONTAL LINE (water stain, mud line, color change) showing flood water height?
-    - If YES and line is BELOW windows (< 36") → Classification is MINOR
-    - If YES and line is AT or ABOVE windows (≥ 36") → Classification is MAJOR
+    - If YES and line is BELOW outlet height (< 18") → Classification is MINOR
+    - If YES and line is AT or ABOVE outlet height (≥ 18") → Classification is MAJOR
+    - Electrical outlets are typically 12-18 inches from floor
     - This OVERRIDES all other considerations!
 
 Q1: Is there a STRUCTURE (house/building) visible in this image?
@@ -228,13 +232,13 @@ Q4: If there is debris (tree, etc.), is it:
     (a) In the YARD/STREET (not touching structure) → AFFECTED
     (b) LEANING on structure (not through it) → MINOR
     (c) PENETRATED THROUGH structure (visible breach) → MAJOR
-Q5: If there is FLOOD DAMAGE with visible water line INSIDE the house:
-    (a) Water line LESS than 36 inches (3 feet) high → MINOR
-    (b) Water line MORE than 36 inches (3 feet) high → MAJOR
+Q5: If there is FLOOD DAMAGE with visible water line on first floor:
+    (a) Water line BELOW 18 inches → MINOR
+    (b) Water line 18 INCHES OR HIGHER → MAJOR
 
 ⚠️ CRITICAL: If the house in the background looks INTACT with straight roof lines and standing walls, the maximum severity is AFFECTED or MINOR, regardless of yard debris.
 
-⚠️ FLOOD RULE: The 36-inch threshold is critical. Look for water stains, mud lines, or debris lines on interior walls to estimate flood height.
+⚠️ FLOOD RULE: The 18-inch threshold is critical per FEMA guidelines. Look for water stains, mud lines, or debris lines to estimate flood height.
 
 ⚠️ A fallen tree in the FRONT YARD with an intact house behind it = AFFECTED (not MAJOR!)
 
@@ -242,14 +246,14 @@ RESPOND ONLY WITH VALID JSON matching this schema:
 ${ANALYSIS_SCHEMA}
 
 In your pdaJustification, you MUST explicitly state:
-1. "FLOOD LINE CHECK: [no water line visible / water line at approximately X inches / water line below windows / water line at or above windows]"
+1. "FLOOD LINE CHECK: [no water line visible / water line below 18 inches / water line at or above 18 inches]"
 2. "Structure assessment: [intact/damaged/breached]"
 3. "Debris location: [yard/street/on structure/through structure]"
 4. "Roof status: [intact/damaged/breached]"
 5. "Wall status: [intact/damaged/collapsed]"
 6. "Final classification reasoning: [explain]"
 
-⚠️ If you see a water line on the siding at or above window height, the answer MUST be MAJOR.`,
+⚠️ If you see a water line on the siding at or above 18 inches (outlet height), the answer MUST be MAJOR.`,
             },
           ],
         },
