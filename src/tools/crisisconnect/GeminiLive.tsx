@@ -1,58 +1,135 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Phone, PhoneOff, Volume2, Loader2, AlertCircle, Globe, Database, Download, X } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, Loader2, AlertCircle, Globe, Database, Download, X, Brain, BookOpen, Sparkles, Pencil, Trash2, Check } from 'lucide-react';
 
-// Gemini API Key - for demo purposes
-// Production should use ephemeral tokens: https://ai.google.dev/gemini-api/docs/ephemeral-tokens
+// API Keys
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
 
 // WebSocket endpoint for Gemini Live API
 const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
-// Model supporting bidiGenerateContent for Live API
-const MODEL = 'models/gemini-2.0-flash-exp';
+// Models - stable vs beta with transcription
+const MODEL_STABLE = 'models/gemini-2.0-flash-exp';
+// Beta uses native audio model that supports transcription (Dec 2025 preview)
+const MODEL_BETA = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+
+// LocalStorage key for lessons learned
+const LESSONS_STORAGE_KEY = 'gemini-voice-lessons';
+
+// Load lessons from localStorage
+const loadLessons = (): string[] => {
+  try {
+    const stored = localStorage.getItem(LESSONS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Save lessons to localStorage
+const saveLessons = (lessons: string[]) => {
+  try {
+    localStorage.setItem(LESSONS_STORAGE_KEY, JSON.stringify(lessons));
+  } catch (e) {
+    console.error('Failed to save lessons:', e);
+  }
+};
+
+// Critic prompt for Claude to evaluate calls
+const CRITIC_PROMPT = `You are a quality assurance expert evaluating disaster hotline calls. Analyze this transcript and provide specific, actionable improvements.
+
+EVALUATION CRITERIA:
+1. Did the operator ask ONE question at a time? (Critical)
+2. Did the operator collect: Name, Phone, Address? (Critical for mapping)
+3. Was the opening script followed?
+4. Was the caller treated with empathy?
+5. Were safety concerns addressed appropriately?
+
+TRANSCRIPT:
+{transcript}
+
+Provide your response in this exact format:
+SCORE: [1-10]
+ISSUES:
+- [Issue 1]
+- [Issue 2]
+LESSONS:
+- [Specific improvement for the system prompt, written as an instruction]
+- [Another specific improvement]
+
+Keep lessons concise and actionable. Focus on the most impactful improvements.`;
 
 // Comprehensive Disaster Hotline Operator Protocols
 const SYSTEM_PROMPT = `You are a compassionate and professional disaster assistance operator answering the disaster relief hotline. Follow these protocols exactly.
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL RULE: ONE QUESTION AT A TIME
+═══════════════════════════════════════════════════════════════════════════════
+NEVER ask multiple questions in the same response. Ask ONE question, wait for the answer, then ask the next question. This is essential for a natural conversation.
+
+BAD (never do this): "Can you give me your name, phone number, and address?"
+GOOD: "May I have your name please?"
+(wait for answer)
+"And what's a good phone number to reach you?"
+(wait for answer)
+"What is your address?"
 
 ═══════════════════════════════════════════════════════════════════════════════
 MANDATORY OPENING SCRIPT
 ═══════════════════════════════════════════════════════════════════════════════
 Begin EVERY call: "Thank you for calling the Disaster Relief Hotline. If this is a life-threatening emergency, please hang up and dial 9-1-1. I am an automated assistant documenting this report for operational records. Human support is available if needed. How can I assist you today?"
 
+After the caller responds with their situation, IMMEDIATELY start collecting their contact information ONE QUESTION AT A TIME.
+
+═══════════════════════════════════════════════════════════════════════════════
+REQUIRED INFORMATION - COLLECT IN THIS ORDER (One question at a time!)
+═══════════════════════════════════════════════════════════════════════════════
+After understanding their basic situation, collect this information ONE QUESTION AT A TIME:
+
+1. NAME: "May I have your name please?"
+2. PHONE: "And what's a good phone number to reach you?"
+3. ADDRESS: "What is your complete street address?" (Get specific: street number, street name, city, state, ZIP)
+4. Then proceed with their specific needs...
+
+IMPORTANT: We need the SPECIFIC ADDRESS (not just city or ZIP) for mapping and sending volunteers.
+
 ═══════════════════════════════════════════════════════════════════════════════
 ADAPTIVE CALL FLOW LOGIC
 ═══════════════════════════════════════════════════════════════════════════════
 Callers often skip questions or provide information out of order. Handle this gracefully:
 
-INFORMATION TRACKING - Mentally track which CRITICAL data points you have collected:
+INFORMATION TRACKING - Track which data points you have collected:
+□ NAME (first and last name)
+□ PHONE NUMBER (callback number)
+□ STREET ADDRESS (full address for mapping)
 □ Safety status confirmed (safe location, no injuries)
-□ Location (city, ZIP, or address)
 □ Household size
 □ Vulnerable members (children, elderly, medical needs)
 □ Pets requiring assistance
 □ Primary need identified
-□ Contact information (phone or callback number)
 
 HANDLING SKIPPED QUESTIONS:
 • If caller jumps ahead: Accept the information, acknowledge it, then circle back naturally
   Example: "Thank you for that. Before I look up shelters, let me make sure I have your information correct..."
-• If caller is vague: Ask clarifying questions without making them feel interrogated
+• If caller is vague: Ask ONE clarifying question
   Example: "And how many people total would need shelter with you?"
 • If caller refuses to answer: Note it and move on—don't press repeatedly
   Example: "That's okay, we can continue. What else can I help with?"
 
-NATURAL TRANSITIONS TO GATHER MISSING DATA:
-• For location: "So I can find the closest resources, what city or ZIP code are you in?"
-• For household: "Will anyone else be with you? I want to make sure we have space for everyone."
-• For medical needs: "Does anyone in your group have medical conditions or mobility needs I should note for the shelter staff?"
-• For pets: "Do you have any pets that need to come with you? Some shelters accept animals."
-• For contact: "What's a good number to reach you if we need to follow up?"
+NATURAL TRANSITIONS TO GATHER MISSING DATA (one at a time):
+• For name: "May I have your name for our records?"
+• For phone: "What's a good number to reach you if we need to follow up?"
+• For address: "What is your complete street address so we can send assistance?"
+• For household: "How many people are in your household?"
+• For medical needs: "Does anyone in your group have medical conditions or mobility needs?"
+• For pets: "Do you have any pets that need to come with you?"
 
 PRIORITY ORDER - Always confirm safety first, then:
-1. Identify the caller's most urgent need
-2. Provide immediate assistance or information for that need
-3. Circle back to gather remaining critical data points
-4. Offer additional resources before closing
+1. Collect NAME, PHONE, and ADDRESS (essential for mapping/response)
+2. Identify the caller's most urgent need
+3. Provide immediate assistance or information for that need
+4. Circle back to gather remaining critical data points
+5. Offer additional resources before closing
 
 ═══════════════════════════════════════════════════════════════════════════════
 LIFE-SAFETY TRIAGE (ALWAYS FIRST - Non-negotiable)
@@ -402,7 +479,19 @@ interface CallerData {
 // Generate unique call ID
 const generateCallId = () => `CALL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-export const GeminiLive: React.FC = () => {
+interface GeminiLiveProps {
+  experimental?: boolean;
+}
+
+// Critic evaluation result interface
+interface CriticEvaluation {
+  score: number;
+  issues: string[];
+  lessons: string[];
+  timestamp: Date;
+}
+
+export const GeminiLive: React.FC<GeminiLiveProps> = ({ experimental = false }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isMicActive, setIsMicActive] = useState(false);
@@ -413,6 +502,18 @@ export const GeminiLive: React.FC = () => {
   const [showDataPanel, setShowDataPanel] = useState(false);
   const [callerData, setCallerData] = useState<CallerData | null>(null);
 
+  // Beta/Experimental features - self-improving voice bot
+  const [lessons, setLessons] = useState<string[]>(() => experimental ? loadLessons() : []);
+  const [criticEvaluation, setCriticEvaluation] = useState<CriticEvaluation | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [showLessonsPanel, setShowLessonsPanel] = useState(false);
+  const [callCount, setCallCount] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem('gemini-voice-call-count') || '0');
+    } catch { return 0; }
+  });
+  const [userTranscript, setUserTranscript] = useState<string[]>([]); // Real-time user speech
+
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -420,6 +521,15 @@ export const GeminiLive: React.FC = () => {
   const audioQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const speechRecognitionRef = useRef<any>(null); // Web Speech API
+  const messagesRef = useRef<Message[]>([]); // To avoid stale closure
+  const currentTranscriptRef = useRef<string>(''); // Fix stale closure for model transcript
+  const inputTranscriptRef = useRef<string>(''); // Buffer for user input transcription
+  const outputTranscriptRef = useRef<string>(''); // Buffer for operator output transcription
+  const transcriptFlushTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce flush
+  const [lessonsApplied, setLessonsApplied] = useState(false); // Show when lessons are injected
+  const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null);
+  const [editingLessonText, setEditingLessonText] = useState('');
 
   // Auto-scroll messages
   useEffect(() => {
@@ -433,6 +543,174 @@ export const GeminiLive: React.FC = () => {
     };
   }, []);
 
+  // Keep messagesRef in sync to avoid stale closures
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Build system prompt with lessons injected (for Beta mode)
+  const buildSystemPrompt = useCallback(() => {
+    if (!experimental || lessons.length === 0) {
+      return SYSTEM_PROMPT;
+    }
+
+    const lessonsSection = `
+═══════════════════════════════════════════════════════════════════════════════
+LESSONS LEARNED FROM PREVIOUS CALLS (Apply these improvements!)
+═══════════════════════════════════════════════════════════════════════════════
+${lessons.map((lesson, i) => `${i + 1}. ${lesson}`).join('\n')}
+
+`;
+    // Insert lessons after the critical rule section
+    return SYSTEM_PROMPT.replace(
+      '═══════════════════════════════════════════════════════════════════════════════\nMANDATORY OPENING SCRIPT',
+      lessonsSection + '═══════════════════════════════════════════════════════════════════════════════\nMANDATORY OPENING SCRIPT'
+    );
+  }, [experimental, lessons]);
+
+  // Call Claude API to critique the call (Beta only)
+  const evaluateCallWithClaude = useCallback(async (transcript: Message[]) => {
+    if (!experimental || !ANTHROPIC_API_KEY || transcript.length < 2) {
+      console.log('Skipping evaluation:', { experimental, hasKey: !!ANTHROPIC_API_KEY, msgCount: transcript.length });
+      return;
+    }
+
+    setIsEvaluating(true);
+
+    try {
+      // Format transcript for Claude
+      const formattedTranscript = transcript.map(m =>
+        `${m.role === 'user' ? 'CALLER' : 'OPERATOR'}: ${m.text}`
+      ).join('\n\n');
+
+      const prompt = CRITIC_PROMPT.replace('{transcript}', formattedTranscript);
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Claude API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.content[0]?.text || '';
+
+      // Parse the response
+      const scoreMatch = content.match(/SCORE:\s*(\d+)/);
+      const issuesMatch = content.match(/ISSUES:\s*([\s\S]*?)(?=LESSONS:|$)/);
+      const lessonsMatch = content.match(/LESSONS:\s*([\s\S]*?)$/);
+
+      const score = scoreMatch ? parseInt(scoreMatch[1]) : 5;
+      const issues = issuesMatch
+        ? issuesMatch[1].split('\n').filter(l => l.trim().startsWith('-')).map(l => l.replace(/^-\s*/, '').trim())
+        : [];
+      const newLessons = lessonsMatch
+        ? lessonsMatch[1].split('\n').filter(l => l.trim().startsWith('-')).map(l => l.replace(/^-\s*/, '').trim())
+        : [];
+
+      const evaluation: CriticEvaluation = {
+        score,
+        issues,
+        lessons: newLessons,
+        timestamp: new Date()
+      };
+
+      setCriticEvaluation(evaluation);
+
+      // Add new lessons to the stored lessons (avoid duplicates, max 10)
+      if (newLessons.length > 0) {
+        // Keep up to 50 lessons (no artificial limit on learning)
+        const updatedLessons = [...new Set([...lessons, ...newLessons])].slice(-50);
+        setLessons(updatedLessons);
+        saveLessons(updatedLessons);
+      }
+
+      // Update call count
+      const newCount = callCount + 1;
+      setCallCount(newCount);
+      localStorage.setItem('gemini-voice-call-count', String(newCount));
+
+      console.log('Call evaluation complete:', evaluation);
+    } catch (err) {
+      console.error('Failed to evaluate call:', err);
+    } finally {
+      setIsEvaluating(false);
+    }
+  }, [experimental, lessons, callCount]);
+
+  // Start Web Speech Recognition for user transcription (Beta only)
+  const startSpeechRecognition = useCallback(() => {
+    if (!experimental) return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('Web Speech API not supported');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      const lastResult = event.results[event.results.length - 1];
+      if (lastResult.isFinal) {
+        const text = lastResult[0].transcript.trim();
+        if (text) {
+          setUserTranscript(prev => [...prev, text]);
+          // Also add to messages for display
+          const newMsg: Message = { role: 'user', text, timestamp: new Date() };
+          setMessages(prev => [...prev, newMsg]);
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      // Restart on recoverable errors
+      if (event.error === 'no-speech' || event.error === 'aborted') {
+        try { recognition.start(); } catch {}
+      }
+    };
+
+    recognition.onend = () => {
+      // Restart if still connected
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        try { recognition.start(); } catch {}
+      }
+    };
+
+    try {
+      recognition.start();
+      speechRecognitionRef.current = recognition;
+      console.log('Speech recognition started');
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+    }
+  }, [experimental]);
+
+  const stopSpeechRecognition = useCallback(() => {
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop();
+      } catch {}
+      speechRecognitionRef.current = null;
+    }
+  }, []);
+
   const connect = useCallback(async () => {
     if (!GEMINI_API_KEY) {
       setError('Gemini API key not configured. Set VITE_GEMINI_API_KEY in environment.');
@@ -442,6 +720,13 @@ export const GeminiLive: React.FC = () => {
     setIsConnecting(true);
     setError(null);
     setMessages([]);
+    setUserTranscript([]);
+    setCriticEvaluation(null);
+
+    // Reset transcript buffers
+    inputTranscriptRef.current = '';
+    outputTranscriptRef.current = '';
+    currentTranscriptRef.current = '';
 
     // Initialize call data capture
     setCallerData({
@@ -463,27 +748,41 @@ export const GeminiLive: React.FC = () => {
       ws.onopen = () => {
         console.log('WebSocket connected');
 
-        // Send setup message
-        const setupMessage = {
-          setup: {
-            model: MODEL,
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: 'Aoede' // Warm, professional female voice
-                  }
+        // Build system prompt with lessons for Beta mode
+        const systemPrompt = buildSystemPrompt();
+        if (experimental && lessons.length > 0) {
+          console.log(`[BETA] Injecting ${lessons.length} lessons into system prompt`);
+          setLessonsApplied(true);
+        } else {
+          setLessonsApplied(false);
+        }
+
+        // Send setup message - Beta mode includes transcription
+        const setupConfig: any = {
+          model: experimental ? MODEL_BETA : MODEL_STABLE,
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: 'Aoede' // Warm, professional female voice
                 }
               }
-            },
-            systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
-            },
-            tools: []
-          }
+            }
+          },
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
+          tools: []
         };
 
+        // Add transcription for Beta mode (at setup level, NOT in generationConfig)
+        if (experimental) {
+          setupConfig.outputAudioTranscription = {};
+          setupConfig.inputAudioTranscription = {};
+        }
+
+        const setupMessage = { setup: setupConfig };
         ws.send(JSON.stringify(setupMessage));
       };
 
@@ -504,6 +803,9 @@ export const GeminiLive: React.FC = () => {
             setIsConnected(true);
             setIsConnecting(false);
             await startMicrophone();
+            // Beta mode: Gemini handles transcription via outputAudioTranscription/inputAudioTranscription
+            // No need for Web Speech API - it causes echo issues
+            console.log(experimental ? '[BETA] Using Gemini native transcription' : '[STABLE] No transcription');
           }
 
           // Server content (audio/text response)
@@ -521,33 +823,73 @@ export const GeminiLive: React.FC = () => {
                   playAudioQueue();
                 }
                 if (part.text) {
-                  setCurrentTranscript(prev => prev + part.text);
+                  // Use ref to avoid stale closure - accumulate full response
+                  currentTranscriptRef.current += part.text;
+                  setCurrentTranscript(currentTranscriptRef.current);
                 }
               }
             }
 
-            // Turn complete
+            // Turn complete - use ref to get full accumulated transcript
             if (content.turnComplete) {
               setIsModelSpeaking(false);
-              if (currentTranscript) {
+              const fullTranscript = currentTranscriptRef.current;
+              if (fullTranscript && fullTranscript.trim()) {
                 setMessages(prev => [...prev, {
                   role: 'model',
-                  text: currentTranscript,
+                  text: fullTranscript,
                   timestamp: new Date()
                 }]);
-                setCurrentTranscript('');
               }
+              // Reset both ref and state
+              currentTranscriptRef.current = '';
+              setCurrentTranscript('');
             }
           }
 
-          // Transcription of user input
+          // Transcription of user input (from Gemini's inputAudioTranscription)
+          // Buffer partial results and flush after a pause
           if (data.serverContent?.inputTranscription?.text) {
             const text = data.serverContent.inputTranscription.text;
+            if (text.trim()) {
+              inputTranscriptRef.current += text;
+              // Clear any pending flush and set a new one
+              if (transcriptFlushTimeoutRef.current) {
+                clearTimeout(transcriptFlushTimeoutRef.current);
+              }
+              // Flush after 800ms of silence (user stopped speaking)
+              transcriptFlushTimeoutRef.current = setTimeout(() => {
+                const fullText = inputTranscriptRef.current.trim();
+                if (fullText) {
+                  setMessages(prev => [...prev, {
+                    role: 'user',
+                    text: fullText,
+                    timestamp: new Date()
+                  }]);
+                  inputTranscriptRef.current = '';
+                }
+              }, 800);
+            }
+          }
+
+          // Transcription of operator output (from Gemini's outputAudioTranscription)
+          // Buffer partial results - flush when turn completes
+          if (data.serverContent?.outputTranscription?.text) {
+            const text = data.serverContent.outputTranscription.text;
+            if (text.trim()) {
+              outputTranscriptRef.current += text;
+            }
+          }
+
+          // When operator turn completes, flush the buffered output transcription
+          if (data.serverContent?.turnComplete && outputTranscriptRef.current.trim()) {
+            const fullText = outputTranscriptRef.current.trim();
             setMessages(prev => [...prev, {
-              role: 'user',
-              text,
+              role: 'model',
+              text: fullText,
               timestamp: new Date()
             }]);
+            outputTranscriptRef.current = '';
           }
 
         } catch (err) {
@@ -563,6 +905,10 @@ export const GeminiLive: React.FC = () => {
 
       ws.onclose = (event) => {
         console.log('WebSocket closed:', event.code, event.reason);
+        // If model not found error and we're on beta, show helpful message
+        if (event.reason?.includes('not found') && experimental) {
+          setError(`Beta model not available. The transcription-enabled model may not be accessible with your API key. Try "Gemini Voice 1" tab instead.`);
+        }
         setIsConnected(false);
         setIsConnecting(false);
         stopMicrophone();
@@ -577,6 +923,31 @@ export const GeminiLive: React.FC = () => {
 
   const disconnect = useCallback(() => {
     stopMicrophone();
+    stopSpeechRecognition();
+
+    // Clear transcript flush timeout
+    if (transcriptFlushTimeoutRef.current) {
+      clearTimeout(transcriptFlushTimeoutRef.current);
+      transcriptFlushTimeoutRef.current = null;
+    }
+
+    // Flush any remaining buffered transcripts before disconnect
+    if (inputTranscriptRef.current.trim()) {
+      setMessages(prev => [...prev, {
+        role: 'user',
+        text: inputTranscriptRef.current.trim(),
+        timestamp: new Date()
+      }]);
+    }
+    if (outputTranscriptRef.current.trim()) {
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: outputTranscriptRef.current.trim(),
+        timestamp: new Date()
+      }]);
+    }
+    inputTranscriptRef.current = '';
+    outputTranscriptRef.current = '';
 
     if (wsRef.current) {
       wsRef.current.close();
@@ -588,18 +959,27 @@ export const GeminiLive: React.FC = () => {
       audioContextRef.current = null;
     }
 
+    // Capture transcript before clearing state (use ref to avoid stale closure)
+    const finalTranscript = [...messagesRef.current];
+
     // Finalize call data
     setCallerData(prev => prev ? {
       ...prev,
       endTime: new Date(),
-      transcript: messages
+      transcript: finalTranscript
     } : null);
 
     setIsConnected(false);
     setIsMicActive(false);
     setIsModelSpeaking(false);
     audioQueueRef.current = [];
-  }, [messages]);
+
+    // Beta mode: Evaluate call with Claude after disconnect
+    if (experimental && finalTranscript.length >= 2) {
+      console.log('[BETA] Triggering call evaluation with', finalTranscript.length, 'messages');
+      evaluateCallWithClaude(finalTranscript);
+    }
+  }, [experimental, evaluateCallWithClaude, stopSpeechRecognition]);
 
   const startMicrophone = async () => {
     try {
@@ -759,14 +1139,34 @@ export const GeminiLive: React.FC = () => {
               <Phone className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-white font-bold text-xl">Gemini Live Voice</h2>
+              <h2 className="text-white font-bold text-xl flex items-center gap-2">
+                {experimental ? 'Gemini Voice Beta' : 'Gemini Voice 1'}
+                {experimental && (
+                  <span className="px-2 py-0.5 text-xs font-medium bg-purple-500 text-white rounded-full">
+                    BETA
+                  </span>
+                )}
+              </h2>
               <p className="text-red-200 text-sm flex items-center gap-2">
                 <Globe className="w-3 h-3" />
-                Multilingual Disaster Assistance
+                {experimental ? 'Self-Improving Voice Bot' : 'Multilingual Disaster Assistance'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Beta: Lessons Panel Button */}
+            {experimental && (
+              <button
+                onClick={() => setShowLessonsPanel(!showLessonsPanel)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
+                  showLessonsPanel ? 'bg-purple-500/30 text-purple-300' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+                title="View lessons learned"
+              >
+                <Brain className="w-4 h-4" />
+                <span className="text-sm font-medium">Lessons ({lessons.length})</span>
+              </button>
+            )}
             {/* Data Panel Button */}
             {callerData && (
               <button
@@ -779,6 +1179,13 @@ export const GeminiLive: React.FC = () => {
                 <Database className="w-4 h-4" />
                 <span className="text-sm font-medium">Data</span>
               </button>
+            )}
+            {/* Beta: Call count indicator */}
+            {experimental && callCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-900/30 rounded-full">
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-xs text-purple-300">{callCount} calls</span>
+              </div>
             )}
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
               isConnected ? 'bg-green-500/20 text-green-400' :
@@ -860,25 +1267,38 @@ export const GeminiLive: React.FC = () => {
               </div>
             )}
 
+            {/* Lessons Applied Banner */}
+            {lessonsApplied && experimental && (
+              <div className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-3 mb-2 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span className="text-sm text-purple-300">
+                  <strong>{lessons.length} lessons</strong> from previous calls applied to this session
+                </span>
+              </div>
+            )}
+
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-3 ${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}>
+                {/* Operator avatar - LEFT side, BLUE */}
                 {msg.role === 'model' && (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0">
                     <Phone className="w-5 h-5 text-white" />
                   </div>
                 )}
+                {/* Message bubble - Operator BLUE, Caller GREEN */}
                 <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
                   msg.role === 'model'
-                    ? 'bg-slate-800 text-white rounded-tl-none'
-                    : 'bg-red-600 text-white rounded-tr-none'
+                    ? 'bg-blue-900/50 border border-blue-700/50 text-white rounded-tl-none'
+                    : 'bg-emerald-900/50 border border-emerald-700/50 text-white rounded-tr-none'
                 }`}>
-                  <div className="text-xs text-slate-400 mb-1">
-                    {msg.role === 'model' ? 'Disaster Relief Operator' : 'You'}
+                  <div className={`text-xs mb-1 ${msg.role === 'model' ? 'text-blue-400' : 'text-emerald-400'}`}>
+                    {msg.role === 'model' ? '🎧 Operator' : '🎤 You'}
                   </div>
                   <p className="text-sm leading-relaxed">{msg.text}</p>
                 </div>
+                {/* Caller avatar - RIGHT side, GREEN */}
                 {msg.role === 'user' && (
-                  <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center flex-shrink-0">
                     <Mic className="w-5 h-5 text-white" />
                   </div>
                 )}
@@ -1075,6 +1495,222 @@ export const GeminiLive: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Beta: Lessons Panel Overlay */}
+      {showLessonsPanel && experimental && (
+        <div className="absolute inset-0 z-50 flex">
+          <div
+            className="flex-1 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowLessonsPanel(false)}
+          />
+          <div className="w-96 bg-slate-900 border-l border-purple-700/50 overflow-y-auto">
+            <div className="sticky top-0 bg-purple-900/50 p-4 border-b border-purple-700/50 flex items-center justify-between">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-400" />
+                Self-Improving Voice Bot
+              </h3>
+              <button
+                onClick={() => setShowLessonsPanel(false)}
+                className="p-1 hover:bg-purple-800/50 rounded"
+              >
+                <X className="w-5 h-5 text-purple-300" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Stats */}
+              <div className="bg-purple-900/30 rounded-lg p-4 border border-purple-700/30">
+                <h4 className="text-sm font-medium text-purple-300 mb-3">Learning Stats</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{callCount}</div>
+                    <div className="text-xs text-purple-400">Total Calls</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">{lessons.length}</div>
+                    <div className="text-xs text-purple-400">Lessons Learned</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Last Evaluation */}
+              {criticEvaluation && (
+                <div className="bg-slate-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    Last Call Evaluation
+                  </h4>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`text-3xl font-bold ${
+                      criticEvaluation.score >= 8 ? 'text-green-400' :
+                      criticEvaluation.score >= 5 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
+                      {criticEvaluation.score}/10
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {criticEvaluation.timestamp.toLocaleTimeString()}
+                    </div>
+                  </div>
+                  {criticEvaluation.issues.length > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs font-medium text-red-400 mb-1">Issues Found:</div>
+                      <ul className="text-xs text-slate-400 space-y-1">
+                        {criticEvaluation.issues.map((issue, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-red-500">•</span>
+                            {issue}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {criticEvaluation.lessons.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-green-400 mb-1">New Lessons:</div>
+                      <ul className="text-xs text-slate-400 space-y-1">
+                        {criticEvaluation.lessons.map((lesson, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-green-500">+</span>
+                            {lesson}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* All Lessons */}
+              <div className="bg-slate-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-slate-400 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-blue-400" />
+                    Stored Lessons ({lessons.length})
+                  </h4>
+                  <button
+                    onClick={() => {
+                      const newLesson = window.prompt('Enter a new lesson for the voice bot:');
+                      if (newLesson?.trim()) {
+                        const updated = [...lessons, newLesson.trim()];
+                        setLessons(updated);
+                        saveLessons(updated);
+                      }
+                    }}
+                    className="text-xs px-2 py-1 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 rounded flex items-center gap-1"
+                    title="Manually add a lesson"
+                  >
+                    + Add
+                  </button>
+                </div>
+                {lessons.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">
+                    No lessons yet. Complete a call to get feedback!
+                  </p>
+                ) : (
+                  <ul className="text-xs text-slate-300 space-y-2 max-h-64 overflow-y-auto">
+                    {lessons.map((lesson, i) => (
+                      <li key={i} className="group flex gap-2 items-start p-2 rounded hover:bg-slate-700/50 transition-colors min-w-0">
+                        <span className="text-purple-400 font-bold shrink-0">{i + 1}.</span>
+                        {editingLessonIndex === i ? (
+                          <div className="flex-1 flex flex-col gap-2">
+                            <textarea
+                              value={editingLessonText}
+                              onChange={(e) => setEditingLessonText(e.target.value)}
+                              className="w-full p-2 bg-slate-900 border border-purple-500 rounded text-white text-xs resize-none"
+                              rows={3}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  const updated = [...lessons];
+                                  updated[i] = editingLessonText.trim();
+                                  setLessons(updated);
+                                  saveLessons(updated);
+                                  setEditingLessonIndex(null);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                              >
+                                <Check className="w-3 h-3" /> Save
+                              </button>
+                              <button
+                                onClick={() => setEditingLessonIndex(null)}
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="flex-1 break-words overflow-hidden">{lesson}</span>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              <button
+                                onClick={() => {
+                                  setEditingLessonIndex(i);
+                                  setEditingLessonText(lesson);
+                                }}
+                                className="p-1 hover:bg-purple-600/50 rounded"
+                                title="Edit lesson"
+                              >
+                                <Pencil className="w-3 h-3 text-purple-400" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete lesson #${i + 1}?\n\n"${lesson.substring(0, 50)}..."`)) {
+                                    const updated = lessons.filter((_, idx) => idx !== i);
+                                    setLessons(updated);
+                                    saveLessons(updated);
+                                  }
+                                }}
+                                className="p-1 hover:bg-red-600/50 rounded"
+                                title="Delete lesson"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-400" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* How it works */}
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                <h4 className="text-xs font-medium text-slate-500 mb-2">How Self-Improvement Works</h4>
+                <ol className="text-xs text-slate-500 space-y-1.5">
+                  <li className="flex gap-2">
+                    <span className="text-purple-400">1.</span>
+                    You make a call with the voice bot
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-purple-400">2.</span>
+                    After call ends, Claude evaluates the transcript
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-purple-400">3.</span>
+                    New lessons are extracted and saved
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-purple-400">4.</span>
+                    Next call gets the improved prompt with lessons
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Beta: Evaluation in progress indicator */}
+      {isEvaluating && experimental && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-purple-900/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 shadow-lg border border-purple-700/50">
+          <Loader2 className="w-4 h-4 text-purple-300 animate-spin" />
+          <span className="text-sm text-purple-200">Claude is evaluating your call...</span>
         </div>
       )}
     </div>

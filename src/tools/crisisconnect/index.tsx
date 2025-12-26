@@ -4,7 +4,7 @@ import { CRISISCONNECT_URL } from '../registry';
 import { crisisConnectSlides } from './slides';
 import { GeminiLive } from './GeminiLive';
 
-type ViewMode = 'live' | 'presentation' | 'video' | 'voice';
+type ViewMode = 'live' | 'presentation' | 'video' | 'voice' | 'voice-experimental';
 
 export const CrisisConnectView: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('live');
@@ -94,10 +94,20 @@ export const CrisisConnectView: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 viewMode === 'voice' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
-              title="Interactive voice with Gemini Live"
+              title="Stable voice bot"
             >
               <Mic className="w-3.5 h-3.5" />
-              Gemini Live
+              Gemini Voice 1
+            </button>
+            <button
+              onClick={() => setViewMode('voice-experimental')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === 'voice-experimental' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Beta: Self-improving voice bot with transcription"
+            >
+              <Mic className="w-3.5 h-3.5" />
+              Gemini Voice Beta
             </button>
           </div>
 
@@ -157,6 +167,8 @@ export const CrisisConnectView: React.FC = () => {
         />
       ) : viewMode === 'voice' ? (
         <GeminiLive />
+      ) : viewMode === 'voice-experimental' ? (
+        <GeminiLive experimental={true} />
       ) : (
         <VideoView />
       )}
