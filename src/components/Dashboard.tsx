@@ -8,11 +8,13 @@ interface DashboardProps {
 }
 
 const SEVERITY_COLORS: Record<DamageSeverity, string> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: '#64748b',
-  [DamageSeverity.AFFECTED]: '#3b82f6',
-  [DamageSeverity.MINOR]: '#eab308',
-  [DamageSeverity.MAJOR]: '#f97316',
+  [DamageSeverity.INACCESSIBLE]: '#a855f7',
   [DamageSeverity.DESTROYED]: '#dc2626',
+  [DamageSeverity.MAJOR]: '#f97316',
+  [DamageSeverity.MINOR]: '#eab308',
+  [DamageSeverity.AFFECTED]: '#3b82f6',
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: '#64748b',
+  [DamageSeverity.UNKNOWN]: '#6b7280',
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ reports }) => {

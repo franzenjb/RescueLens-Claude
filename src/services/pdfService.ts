@@ -2,19 +2,23 @@ import jsPDF from 'jspdf';
 import { DamageReport, DamageSeverity } from '../types';
 
 const SEVERITY_COLORS: Record<DamageSeverity, [number, number, number]> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: [100, 116, 139],
-  [DamageSeverity.AFFECTED]: [59, 130, 246],
-  [DamageSeverity.MINOR]: [234, 179, 8],
-  [DamageSeverity.MAJOR]: [249, 115, 22],
+  [DamageSeverity.INACCESSIBLE]: [168, 85, 247],
   [DamageSeverity.DESTROYED]: [220, 38, 38],
+  [DamageSeverity.MAJOR]: [249, 115, 22],
+  [DamageSeverity.MINOR]: [234, 179, 8],
+  [DamageSeverity.AFFECTED]: [59, 130, 246],
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: [100, 116, 139],
+  [DamageSeverity.UNKNOWN]: [107, 114, 128],
 };
 
 const SEVERITY_OUTCOMES: Record<DamageSeverity, string> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'No assistance required - property verified safe',
-  [DamageSeverity.AFFECTED]: 'Clean-up assistance provided - structure habitable',
-  [DamageSeverity.MINOR]: 'Emergency repair assistance - temporary tarping/boarding',
-  [DamageSeverity.MAJOR]: 'Relocation assistance - structure uninhabitable pending major repairs',
+  [DamageSeverity.INACCESSIBLE]: 'Assessment pending - property inaccessible, requires follow-up visit',
   [DamageSeverity.DESTROYED]: 'Full disaster relief - total loss, long-term housing assistance',
+  [DamageSeverity.MAJOR]: 'Relocation assistance - structure uninhabitable pending major repairs',
+  [DamageSeverity.MINOR]: 'Emergency repair assistance - temporary tarping/boarding',
+  [DamageSeverity.AFFECTED]: 'Clean-up assistance provided - structure habitable',
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'No assistance required - property verified safe',
+  [DamageSeverity.UNKNOWN]: 'Assessment incomplete - insufficient evidence, requires manual review',
 };
 
 function generateNarrative(report: DamageReport): string {
@@ -24,15 +28,19 @@ function generateNarrative(report: DamageReport): string {
   const homeType = report.analysis?.homeType?.toLowerCase() || 'residential';
 
   const narratives: Record<DamageSeverity, string> = {
-    [DamageSeverity.NO_VISIBLE_DAMAGE]: `${clientName} reported concerns following the recent storm event affecting ${address}. Upon field assessment, the ${homeType} structure showed no visible damage. All structural components including roof, walls, and foundation appear intact. The property perimeter was inspected and found to be clear of hazardous debris. ${clientName} was provided with disaster preparedness materials and contact information for future assistance if needed.`,
+    [DamageSeverity.INACCESSIBLE]: `${clientName} reported damage to their ${homeType} residence at ${address}. Field assessment could not be completed as the property was inaccessible due to blocked roads, standing floodwater, debris obstruction, or compromised infrastructure. A follow-up assessment has been scheduled once access is restored. ${clientName} was provided with emergency contact information and advised to document any visible damage from a safe distance.`,
 
-    [DamageSeverity.AFFECTED]: `${clientName} contacted disaster services following storm damage at ${address}. Field assessment revealed the ${homeType} structure remains structurally sound with the building envelope fully intact. However, significant debris was observed in the yard/driveway area requiring cleanup assistance. ${clientName} confirmed the interior of the home was not compromised. A Clean-Up Kit was provided along with information about debris removal services. The family is able to safely remain in the home during cleanup operations.`,
-
-    [DamageSeverity.MINOR]: `${clientName} reported damage to their ${homeType} residence at ${address} following severe weather. Assessment revealed minor structural damage including damage to exterior surfaces (siding, shingles, or windows). The building envelope has minor breaches but remains largely intact. The home is habitable with temporary repairs. Emergency tarping/boarding was coordinated to prevent further weather infiltration. ${clientName} was provided with contractor referrals and information about disaster assistance programs. Follow-up scheduled in 72 hours.`,
+    [DamageSeverity.DESTROYED]: `${clientName}'s ${homeType} residence at ${address} was destroyed in the disaster event. Field assessment confirmed total structural loss - the building envelope has catastrophically failed with complete roof collapse and/or wall failure. The property is not recoverable and has been red-tagged. ${clientName} and all household members have been evacuated and provided emergency shelter placement. Full disaster relief services have been activated including emergency financial assistance, housing assistance, and mental health support referrals. Long-term recovery case management has been initiated.`,
 
     [DamageSeverity.MAJOR]: `${clientName}'s ${homeType} residence at ${address} sustained major structural damage. Assessment confirmed significant breach of the building envelope with damage to load-bearing components. The structure has been deemed uninhabitable pending major repairs. ${clientName} and household members have been relocated to emergency shelter at the designated facility. Financial assistance for immediate needs has been provided. Case has been escalated to long-term recovery team for ongoing support. Structural engineering assessment has been requested.`,
 
-    [DamageSeverity.DESTROYED]: `${clientName}'s ${homeType} residence at ${address} was destroyed in the disaster event. Field assessment confirmed total structural loss - the building envelope has catastrophically failed with complete roof collapse and/or wall failure. The property is not recoverable and has been red-tagged. ${clientName} and all household members have been evacuated and provided emergency shelter placement. Full disaster relief services have been activated including emergency financial assistance, housing assistance, and mental health support referrals. Long-term recovery case management has been initiated.`,
+    [DamageSeverity.MINOR]: `${clientName} reported damage to their ${homeType} residence at ${address} following severe weather. Assessment revealed minor structural damage including damage to exterior surfaces (siding, shingles, or windows). The building envelope has minor breaches but remains largely intact. The home is habitable with temporary repairs. Emergency tarping/boarding was coordinated to prevent further weather infiltration. ${clientName} was provided with contractor referrals and information about disaster assistance programs. Follow-up scheduled in 72 hours.`,
+
+    [DamageSeverity.AFFECTED]: `${clientName} contacted disaster services following storm damage at ${address}. Field assessment revealed the ${homeType} structure remains structurally sound with the building envelope fully intact. However, significant debris was observed in the yard/driveway area requiring cleanup assistance. ${clientName} confirmed the interior of the home was not compromised. A Clean-Up Kit was provided along with information about debris removal services. The family is able to safely remain in the home during cleanup operations.`,
+
+    [DamageSeverity.NO_VISIBLE_DAMAGE]: `${clientName} reported concerns following the recent storm event affecting ${address}. Upon field assessment, the ${homeType} structure showed no visible damage. All structural components including roof, walls, and foundation appear intact. The property perimeter was inspected and found to be clear of hazardous debris. ${clientName} was provided with disaster preparedness materials and contact information for future assistance if needed.`,
+
+    [DamageSeverity.UNKNOWN]: `${clientName} reported damage to their ${homeType} residence at ${address}. Field assessment was attempted but insufficient evidence was available to make a definitive damage classification. The case has been flagged for manual review by a senior assessor. ${clientName} was advised to gather additional documentation including photographs and receipts for any emergency repairs. A follow-up assessment has been scheduled.`,
   };
 
   return narratives[severity];

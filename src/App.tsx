@@ -4,11 +4,11 @@ import { Analyzer } from './components/Analyzer';
 import { HistoryView } from './components/HistoryView';
 import { Dashboard } from './components/Dashboard';
 import { MapView } from './components/MapView';
-import { Settings } from './components/Settings';
 import { ToolSplash, shouldShowSplash } from './components/ToolSplash';
 import { AboutView } from './tools/about';
 import { CrisisConnectView } from './tools/crisisconnect';
 import { LidarView } from './tools/lidar';
+import { ExampleReport } from './components/ExampleReport';
 import { useReports } from './hooks/useReports';
 import { initializeClaude } from './services/claudeService';
 import { getSettings } from './services/storageService';
@@ -104,8 +104,8 @@ function App() {
         return <MapView reports={reports} />;
       case 'dashboard':
         return <Dashboard reports={reports} />;
-      case 'settings':
-        return <Settings onExport={exportData} reportCount={reports.length} />;
+      case 'example':
+        return <ExampleReport />;
       default:
         return <Analyzer onReportCreated={addReport} />;
     }

@@ -9,19 +9,23 @@ interface HistoryViewProps {
 }
 
 const SEVERITY_COLORS: Record<DamageSeverity, string> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'bg-slate-500',
-  [DamageSeverity.AFFECTED]: 'bg-blue-500',
-  [DamageSeverity.MINOR]: 'bg-yellow-500',
-  [DamageSeverity.MAJOR]: 'bg-orange-500',
+  [DamageSeverity.INACCESSIBLE]: 'bg-purple-500',
   [DamageSeverity.DESTROYED]: 'bg-red-600',
+  [DamageSeverity.MAJOR]: 'bg-orange-500',
+  [DamageSeverity.MINOR]: 'bg-yellow-500',
+  [DamageSeverity.AFFECTED]: 'bg-blue-500',
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'bg-slate-500',
+  [DamageSeverity.UNKNOWN]: 'bg-gray-500',
 };
 
 const SEVERITY_TEXT: Record<DamageSeverity, string> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'text-slate-400',
-  [DamageSeverity.AFFECTED]: 'text-blue-400',
-  [DamageSeverity.MINOR]: 'text-yellow-400',
-  [DamageSeverity.MAJOR]: 'text-orange-400',
+  [DamageSeverity.INACCESSIBLE]: 'text-purple-400',
   [DamageSeverity.DESTROYED]: 'text-red-400',
+  [DamageSeverity.MAJOR]: 'text-orange-400',
+  [DamageSeverity.MINOR]: 'text-yellow-400',
+  [DamageSeverity.AFFECTED]: 'text-blue-400',
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: 'text-slate-400',
+  [DamageSeverity.UNKNOWN]: 'text-gray-400',
 };
 
 export const HistoryView: React.FC<HistoryViewProps> = ({ reports, onDelete }) => {

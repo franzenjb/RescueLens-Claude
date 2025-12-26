@@ -18,11 +18,13 @@ interface QueueItem {
 }
 
 const SEVERITY_STYLES: Record<DamageSeverity, { bg: string; text: string; border: string }> = {
-  [DamageSeverity.NO_VISIBLE_DAMAGE]: { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-600' },
-  [DamageSeverity.AFFECTED]: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/40' },
-  [DamageSeverity.MINOR]: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/40' },
-  [DamageSeverity.MAJOR]: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/40' },
+  [DamageSeverity.INACCESSIBLE]: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/40' },
   [DamageSeverity.DESTROYED]: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/40' },
+  [DamageSeverity.MAJOR]: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/40' },
+  [DamageSeverity.MINOR]: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/40' },
+  [DamageSeverity.AFFECTED]: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/40' },
+  [DamageSeverity.NO_VISIBLE_DAMAGE]: { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-600' },
+  [DamageSeverity.UNKNOWN]: { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/40' },
 };
 
 const generateLocation = (): Location => {

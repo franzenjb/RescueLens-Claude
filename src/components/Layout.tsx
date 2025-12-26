@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, History, Map, BarChart3, Settings, Shield, Phone, Radar, Home } from 'lucide-react';
+import { Camera, History, Map, BarChart3, Shield, Phone, Radar, Home, FileText } from 'lucide-react';
 import { tools, homeTool } from '../tools/registry';
 
 interface LayoutProps {
@@ -16,7 +16,7 @@ const rescuelensTabs = [
   { id: 'history', label: 'History', icon: History },
   { id: 'map', label: 'Map', icon: Map },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'example', label: 'Example Report', icon: FileText },
 ];
 
 // Tool icons mapping

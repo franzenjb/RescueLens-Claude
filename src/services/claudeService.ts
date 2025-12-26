@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { DamageAnalysis, DamageSeverity, DebrisType, HomeType, Detection } from '../types';
+import { DamageAnalysis, DamageSeverity, DebrisType, HomeType, IncidentType, Detection } from '../types';
 
 let anthropicClient: Anthropic | null = null;
 
@@ -21,165 +21,216 @@ export function getApiKeyFromEnv(): string | undefined {
   return import.meta.env.VITE_ANTHROPIC_API_KEY;
 }
 
-const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector. Your job is to provide ACCURATE damage assessments.
+/**
+ * FEMA Preliminary Damage Assessment (PDA) System Prompt
+ * Based on FEMA Preliminary Damage Assessment Guide (July 2025)
+ * For Individual Assistance (IA) residential structure damage assessment
+ */
+const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector following the FEMA PDA Guide (July 2025). Your job is to provide ACCURATE, CONSISTENT damage assessments for Individual Assistance (IA).
 
-⚠️⚠️⚠️ FIRST - CHECK FOR FLOOD WATER LINE ⚠️⚠️⚠️
-BEFORE doing anything else, CAREFULLY EXAMINE the SIDING/EXTERIOR WALLS for flood evidence.
+═══════════════════════════════════════════════════════════════════════════════
+SEVERITY LABELS (ordered by severity - always choose HIGHEST applicable)
+═══════════════════════════════════════════════════════════════════════════════
 
-WHAT TO LOOK FOR - a horizontal line across the siding where:
-- The area BELOW the line is DARKER, DIRTIER, or DISCOLORED (from flood water/mud)
-- The area ABOVE the line is CLEANER or LIGHTER (above water level)
-- This creates a visible HORIZONTAL BAND or LINE across the house
+| Label | Rank | Meaning |
+|-------|------|---------|
+| INACCESSIBLE | 5 | Cannot visually verify damage (access blocked by floodwater, debris, roads/bridges out) |
+| DESTROYED | 4 | Total loss / repair not feasible |
+| MAJOR | 3 | Significant damage requiring extensive repairs; often structural impacts |
+| MINOR | 2 | Non-structural damage; structural integrity not affected; repairs needed |
+| AFFECTED | 1 | Cosmetic/minimal damage; essential living space & key systems not impacted |
+| UNKNOWN | 0 | Insufficient evidence to confidently grade (use only when required evidence is missing) |
 
-COMMON EXAMPLES:
-- Tan/beige siding with a brown/muddy stain up to a certain height
-- Vinyl siding with visible dirt/sediment line
-- Brick with efflorescence or mud marks
+═══════════════════════════════════════════════════════════════════════════════
+GLOBAL DECISION ORDER (always apply in this order to prevent under-grading)
+═══════════════════════════════════════════════════════════════════════════════
 
-HOW TO MEASURE HEIGHT (per FEMA Damage Assessment Operations Manual):
-- Electrical outlets = approximately 12-18 inches from floor
-- Water line BELOW 18 inches on first floor = MINOR
-- Water line 18 INCHES OR HIGHER on first floor = MAJOR
-- Water line ABOVE electrical outlets = MAJOR
+1. INACCESSIBLE → if cannot visually verify
+2. DESTROYED → if ANY destroyed criteria are met
+3. MAJOR → if ANY major criteria are met
+4. MINOR → if ANY minor criteria are met
+5. AFFECTED → otherwise, if minimal/cosmetic
+6. UNKNOWN → only if evidence is insufficient
 
-⚠️ THIS OVERRIDES EVERYTHING: If you see flood staining above outlet height (18"+) → MAJOR
-Do NOT classify flood-damaged homes as "AFFECTED" - if water entered living space, minimum is MINOR.
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1: IDENTIFY HOME TYPE
+═══════════════════════════════════════════════════════════════════════════════
 
-🏠 CRITICAL RULE: ONLY THE PRIMARY DWELLING COUNTS
-FEMA PDA assessment is ONLY for the PRIMARY DWELLING (the main house).
-Damage to ACCESSORY STRUCTURES does NOT affect the classification:
-- Screen enclosures / screened porches / patios
-- Detached garages
-- Barns, sheds, outbuildings
-- Fences, carports, pergolas
-- Pool cages / pool houses
+🏠 MANUFACTURED/MOBILE HOME indicators:
+- Built on steel frame/chassis
+- May be on blocks, piers, or permanent foundation
+- Has belly board insulation underneath
+- Single-wide or double-wide
+- HUD certification plate
 
-If the MAIN HOUSE is intact but an accessory structure is damaged → AFFECTED
-Example: Collapsed screen enclosure with intact house behind it = AFFECTED (not MINOR)
-The accessory structure damage is noted but does NOT upgrade the severity.
+🏡 CONVENTIONAL (STICK-BUILT) HOME indicators:
+- Permanent foundation (slab, crawl space, or basement)
+- Wood or steel frame construction
+- Site-built walls, roof, and floors
 
-🛑 STOP AND CHECK: TREE IMAGES
-If you see a fallen tree in the image, ask yourself:
-1. Can I see the tree trunk/branches PHYSICALLY INSIDE the house? (through a hole in roof/wall)
-2. Can I see a HOLE or BREACH in the roof/wall where the tree went through?
-3. Is there RUBBLE, DEBRIS, or BROKEN STRUCTURE around the impact point?
+🏢 MULTI-FAMILY: Apartments, condos, townhomes, duplexes (use conventional rules)
 
-If you answered NO to all three → The tree is in the YARD → Classify as AFFECTED
-A tree lying on grass, even if NEAR a house, is YARD DEBRIS, not structural damage.
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2: DETERMINE INCIDENT TYPE (FLOOD vs NON-FLOOD)
+═══════════════════════════════════════════════════════════════════════════════
 
-🌊 STOP AND CHECK: FLOOD/WATER DAMAGE IMAGES
-LOOK CAREFULLY at the EXTERIOR WALLS of the structure for water line evidence:
-- WATER STAIN LINE on brick, siding, or stucco - a horizontal discoloration line
-- MUD LINE - darker color below a certain height, cleaner above
-- DEBRIS LINE - leaves, grass, or sediment stuck to walls at a consistent height
-- DISCOLORATION BAND - where flood water sat against the structure
+🌊 FLOOD INDICATORS:
+- Water stain line / mud line on exterior walls
+- Debris line (leaves, grass, sediment) at consistent height
+- FEMA inspection markings
+- Debris piled against structure
+- Discoloration band on siding/brick
 
-These stains are PROOF that water entered the home at that height!
+🌪️ NON-FLOOD INDICATORS:
+- Wind damage, tornado, hurricane (non-surge)
+- Tree/debris impact
+- Fire damage
+- Structural collapse without water
 
-Other flood indicators:
-- FEMA inspection signs
-- Debris piled against house
-- Waterlogged items in yard
+═══════════════════════════════════════════════════════════════════════════════
+MANUFACTURED HOME GRADING RULES
+═══════════════════════════════════════════════════════════════════════════════
 
-⚠️ CRITICAL FLOOD RULE - THE 36-INCH THRESHOLD:
-When you see a water stain/mud line on the EXTERIOR of a house:
-- Stain line BELOW 36 inches from ground = MINOR (water entered but below 3 feet)
-- Stain line ABOVE 36 inches from ground = MAJOR (water exceeded 3 feet inside)
+📊 AFFECTED (manufactured):
+- FLOOD: Waterline BELOW floor system + cosmetic damage only (skirting)
+- NON-FLOOD: Cosmetic-only damage, non-access-impacting debris
 
-Reference points to estimate height:
-  * Foundation top/first brick course ≈ 6-12 inches
-  * Electrical meter box bottom ≈ 36-48 inches
-  * Door handle height ≈ 36 inches
-  * Window sill height ≈ 30-36 inches
-  * Bottom of windows ≈ 24-36 inches
+📊 MINOR (manufactured):
+- FLOOD: Waterline in FLOOR SYSTEM ONLY (not living space); bottom-board/ductwork/HVAC affected
+- NON-FLOOD: Some nonstructural damage (windows, doors, wall coverings, ductwork, HVAC)
+- MUST NOT be displaced from foundation or have structural damage
 
-- NEVER classify flood-damaged homes as just "AFFECTED" - minimum is MINOR if water entered.
+📊 MAJOR (manufactured):
+- FLOOD: Water ENTERED LIVING SPACE but BELOW CEILING
+- NON-FLOOD: Majority of nonstructural components significantly damaged; roof substantially damaged
+- DISPLACED from foundation/piers WITH structural damage
 
-🔍 STEP 1: IDENTIFY THE STRUCTURE
-First, locate and assess the PRIMARY STRUCTURE (house/building):
-- Look at the ROOF: Are the lines straight? Any visible holes or missing sections?
-- Look at the WALLS: Are they vertical? Any collapse or large holes?
-- Look at WINDOWS/DOORS: Are they in their frames?
+📊 DESTROYED (manufactured) - ANY of these triggers:
+- Waterline AT OR ABOVE CEILING
+- Frame BENT, TWISTED, or COMPROMISED
+- Most STRUCTURAL FRAMING of roof/walls compromised, exposing interior
 
-If the structure looks INTACT → Maximum severity is AFFECTED or MINOR
+═══════════════════════════════════════════════════════════════════════════════
+CONVENTIONAL/MULTI-FAMILY GRADING RULES
+═══════════════════════════════════════════════════════════════════════════════
 
-🔍 STEP 2: LOCATE THE DEBRIS (SEPARATE FROM STRUCTURE)
-Now look at WHERE debris is located:
-- ON THE GROUND (yard, street, driveway) → Does NOT affect structure → AFFECTED
-- LEANING AGAINST structure but not through it → MINOR
-- CLEARLY PENETRATED THROUGH structure (visible breach) → MAJOR
+📊 AFFECTED (conventional):
+- FLOOD: Waterline in CRAWLSPACE or UNFINISHED BASEMENT only
+- Damage to attached structures (porch/carport/garage) but essential living space OK
+- Cosmetic damage, minimal missing shingles/siding
 
-📊 SEVERITY LEVELS:
+📊 MINOR (conventional):
+- FLOOD: Waterline BELOW ELECTRICAL OUTLETS in lowest essential living floor
+- NON-FLOOD: Nonstructural roof damage, drywall/insulation damage, small foundation cracks
+- Chimney damage, mechanical damage (HVAC/water heater), well/septic contamination
 
-1. NO_VISIBLE_DAMAGE - Normal appearance
+⚠️ ESCALATE MINOR → MAJOR if:
+- Long duration flooding
+- Contaminants present (sewage, heating fuel, chemicals)
+- Basement mechanical damage (furnace/boiler/water heater)
 
-2. AFFECTED (Use when structure is INTACT but debris present)
-   ✓ Tree/debris in YARD, structure INTACT
-   ✓ Vegetation debris anywhere not on structure
-   ✓ Minor cosmetic issues (shutters, gutters, landscaping)
-   ✓ House visible and looking UNDAMAGED
+📊 MAJOR (conventional):
+- FLOOD: Waterline AT OR ABOVE ELECTRICAL OUTLETS
+- Structural damage requiring extensive repairs
+- Escalated from MINOR due to contamination/duration/mechanical damage
 
-3. MINOR - Surface/Cosmetic Damage to Structure
-   - Missing shingles (but roof deck intact)
-   - Broken windows, damaged siding
-   - Tree touching/leaning on structure (not through it)
-   - FLOOD: Water line on first floor BELOW 18 inches
+📊 DESTROYED (conventional) - ANY of these triggers:
+- Waterline AT OR ABOVE CEILING of above-ground essential living space
+- FAILURE of TWO OR MORE STRUCTURAL COMPONENTS
+- Total loss / repair not feasible
 
-4. MAJOR - Significant Structural Damage (Partial)
-   - Hole in roof or wall with interior visible
-   - Tree/debris penetrated through structure
-   - Partial roof collapse (but some walls standing)
-   - Structure damaged but still recognizable as a building
-   - FLOOD: Water line 18 INCHES OR HIGHER on first floor
-   - FLOOD: Water line ABOVE electrical outlets
+═══════════════════════════════════════════════════════════════════════════════
+WATER LINE HEIGHT REFERENCES
+═══════════════════════════════════════════════════════════════════════════════
 
-5. DESTROYED - Total Loss (Use when building form is GONE)
-   ✓ Structure has COLLAPSED - no longer looks like a building
-   ✓ Roof COMPLETELY gone AND most walls gone
-   ✓ Only foundation/slab remains with debris pile
-   ✓ Structural debris (framing, roofing) scattered across yard
-   ✓ Building has lost its original form entirely
+Use these reference points to estimate water line height:
+- Electrical outlets: 12-18 inches from floor
+- Door handle: ~36 inches
+- Window sill: ~30-36 inches
+- Light switch: ~48 inches
+- Electrical panel: ~60 inches
 
-   KEY: If you see a DEBRIS FIELD of building materials where a house USED to be, that's DESTROYED.
+MANUFACTURED HOMES (water line severity):
+- Below floor system → AFFECTED
+- In floor system only → MINOR
+- In living space, below ceiling → MAJOR
+- At or above ceiling → DESTROYED
 
-🚫 CRITICAL ERRORS TO AVOID:
-❌ Seeing a tree and assuming it hit the house (check if structure is intact)
-❌ Saying "tree fell onto house" when tree is clearly in the yard
-❌ Classifying yard debris as structural damage
-❌ Using MAJOR when structure has completely collapsed (that's DESTROYED)
-❌ Using MAJOR when you cannot see actual structural damage (that's AFFECTED)
-❌ Classifying FLOOD-DAMAGED homes as "AFFECTED" - if water entered, minimum is MINOR
-❌ Ignoring FEMA "WATER DAMAGE" signs - these confirm interior flooding occurred
-❌ Not assessing water line height when flood evidence is present
+CONVENTIONAL HOMES (water line severity):
+- Crawlspace/unfinished basement only → AFFECTED
+- Below electrical outlets → MINOR
+- At or above electrical outlets → MAJOR
+- At or above ceiling → DESTROYED
 
-✅ QUICK DECISION GUIDE:
-- Structure looks NORMAL with debris in yard? → AFFECTED
-- Accessory structure damaged (patio, garage, shed) but house intact? → AFFECTED
-- Structure has HOLES but is still standing? → MAJOR
-- Structure has COLLAPSED into debris pile? → DESTROYED
-- FLOOD water line on first floor < 18 inches? → MINOR
-- FLOOD water line on first floor ≥ 18 inches? → MAJOR
+═══════════════════════════════════════════════════════════════════════════════
+TIE-BREAKER RULES (when multiple labels seem plausible)
+═══════════════════════════════════════════════════════════════════════════════
+
+Always use the HIGHEST severity supported by evidence:
+- If ANY DESTROYED trigger exists → DESTROYED
+- If ANY MAJOR trigger exists → MAJOR
+- If ONLY nonstructural indicators → MINOR
+- If COSMETIC/minimal only → AFFECTED
+- If evidence is CONTRADICTORY or MISSING → UNKNOWN + flag for review
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL RULES
+═══════════════════════════════════════════════════════════════════════════════
+
+🏠 ONLY THE PRIMARY DWELLING COUNTS
+Damage to accessory structures (screen enclosures, detached garages, sheds, fences, pool cages) does NOT affect classification. If main house is intact but accessory damaged → AFFECTED
+
+🌳 TREE/DEBRIS ASSESSMENT
+- Tree in YARD (not touching structure) → AFFECTED
+- Tree LEANING on structure (not through) → MINOR
+- Tree PENETRATED THROUGH structure → MAJOR
+
+🚫 ERRORS TO AVOID:
+❌ Classifying flood-damaged homes as AFFECTED (if water entered, minimum is MINOR)
+❌ Seeing tree and assuming it hit house (verify breach)
+❌ Using MAJOR when structure has collapsed (that's DESTROYED)
+❌ Ignoring escalation factors (contamination, duration, mechanical damage)
+❌ Forgetting frame damage = DESTROYED for manufactured homes
 
 RESPONSE FORMAT: Valid JSON only.`;
 
 const ANALYSIS_SCHEMA = `{
-  "overallSeverity": "NO_VISIBLE_DAMAGE" | "AFFECTED" | "MINOR" | "MAJOR" | "DESTROYED",
-  "summary": "One sentence summary starting with severity level, e.g., 'MAJOR: Tree crashed through roof creating structural breach'",
+  "overallSeverity": "INACCESSIBLE" | "DESTROYED" | "MAJOR" | "MINOR" | "AFFECTED" | "NO_VISIBLE_DAMAGE" | "UNKNOWN",
+  "incidentType": "FLOOD" | "NON_FLOOD",
+  "summary": "One sentence summary starting with severity level, e.g., 'MAJOR: Water line at outlet height indicates significant flood damage'",
   "structuralAssessment": "Status of the envelope - walls, roof, foundation. Is it intact, damaged, or breached?",
   "debrisAssessment": "What debris is visible? Is it structural (from the house) or household (contents/cleanup)?",
-  "pdaJustification": "Explain step-by-step why you chose this severity. Address: 1) Envelope status, 2) Debris type, 3) Habitability",
+  "pdaJustification": "Step-by-step reasoning following FEMA July 2025 decision order",
   "homeType": "CONVENTIONAL" | "MANUFACTURED" | "MULTI_FAMILY" | "COMMERCIAL" | "NONE",
+  "floodEvidence": {
+    "waterLineDetected": true/false,
+    "waterLineReference": "below_floor_system" | "in_floor_system_only" | "in_living_space_below_ceiling" | "at_or_above_ceiling" | "unfinished_basement_only" | "below_outlets" | "at_or_above_outlets" | null,
+    "estimatedHeightInches": number or null,
+    "contaminationPresent": true/false,
+    "longDurationFlooding": true/false,
+    "basementMechanicalDamage": true/false
+  },
+  "structuralIndicators": {
+    "roofDamage": "none" | "covering_only" | "structural_ribbing" | "collapsed",
+    "wallDamage": "none" | "nonstructural" | "structural" | "collapsed",
+    "foundationStatus": "intact" | "cracked" | "displaced" | "failed",
+    "frameCompromised": true/false,
+    "displacedFromFoundation": true/false,
+    "structuralComponentsFailedCount": number
+  },
+  "reasonCodes": ["waterline_at_or_above_outlets", "contamination_present", ...],
   "detections": [
     {
       "object": "Name of damaged item or debris",
       "type": "VEGETATION" | "STRUCTURAL" | "VEHICLE" | "FLOOD" | "INFRASTRUCTURE" | "HOUSEHOLD" | "UNKNOWN",
-      "severity": "NO_VISIBLE_DAMAGE" | "AFFECTED" | "MINOR" | "MAJOR" | "DESTROYED",
+      "severity": "INACCESSIBLE" | "DESTROYED" | "MAJOR" | "MINOR" | "AFFECTED" | "NO_VISIBLE_DAMAGE" | "UNKNOWN",
       "description": "Brief description of this specific damage",
       "confidence": 85
     }
   ],
   "recommendations": ["Action item 1", "Action item 2"],
-  "confidence": 90
+  "confidence": 90,
+  "accessBlocked": true/false
 }`;
 
 export async function analyzeImage(base64Image: string): Promise<DamageAnalysis> {
@@ -214,46 +265,69 @@ export async function analyzeImage(base64Image: string): Promise<DamageAnalysis>
             },
             {
               type: 'text',
-              text: `Analyze this disaster damage photograph for FEMA PDA assessment.
+              text: `Analyze this disaster damage photograph for FEMA PDA Individual Assistance (IA) assessment using the FEMA PDA Guide (July 2025).
 
-🛑 MANDATORY PRE-ASSESSMENT CHECKLIST:
-Before choosing a severity level, you MUST answer these questions IN ORDER:
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY ASSESSMENT STEPS (follow in order)
+═══════════════════════════════════════════════════════════════════════════════
 
-Q0: ⚠️ FLOOD CHECK FIRST ⚠️ - Look at the SIDING/EXTERIOR WALLS. Is there a visible HORIZONTAL LINE (water stain, mud line, color change) showing flood water height?
-    - If YES and line is BELOW outlet height (< 18") → Classification is MINOR
-    - If YES and line is AT or ABOVE outlet height (≥ 18") → Classification is MAJOR
-    - Electrical outlets are typically 12-18 inches from floor
-    - This OVERRIDES all other considerations!
+STEP 1: ACCESS CHECK
+- Can you visually verify the damage? If NO → INACCESSIBLE
 
-Q1: Is there a STRUCTURE (house/building) visible in this image?
-Q2: Does the structure's ROOF have any visible HOLES or MISSING SECTIONS?
-Q3: Do any WALLS show COLLAPSE, HOLES, or STRUCTURAL FAILURE?
-Q4: If there is debris (tree, etc.), is it:
-    (a) In the YARD/STREET (not touching structure) → AFFECTED
-    (b) LEANING on structure (not through it) → MINOR
-    (c) PENETRATED THROUGH structure (visible breach) → MAJOR
-Q5: If there is FLOOD DAMAGE with visible water line on first floor:
-    (a) Water line BELOW 18 inches → MINOR
-    (b) Water line 18 INCHES OR HIGHER → MAJOR
+STEP 2: HOME TYPE IDENTIFICATION
+- Is this MANUFACTURED (mobile home, on piers/blocks, steel frame) or CONVENTIONAL (stick-built, permanent foundation)?
+- Multi-family buildings use CONVENTIONAL rules
 
-⚠️ CRITICAL: If the house in the background looks INTACT with straight roof lines and standing walls, the maximum severity is AFFECTED or MINOR, regardless of yard debris.
+STEP 3: INCIDENT TYPE DETERMINATION
+- Look for FLOOD indicators: water stain line, mud line, debris line on walls
+- If no flood evidence → NON-FLOOD incident
 
-⚠️ FLOOD RULE: The 18-inch threshold is critical per FEMA guidelines. Look for water stains, mud lines, or debris lines to estimate flood height.
+STEP 4: APPLY GRADING RULES (in order - stop at first match)
 
-⚠️ A fallen tree in the FRONT YARD with an intact house behind it = AFFECTED (not MAJOR!)
+FOR MANUFACTURED HOMES:
+- Frame bent/twisted/compromised? → DESTROYED
+- Water at/above ceiling? → DESTROYED
+- Structural framing of roof/walls exposed? → DESTROYED
+- Water in living space (below ceiling)? → MAJOR
+- Displaced from foundation with structural damage? → MAJOR
+- Roof substantially damaged? → MAJOR
+- Water in floor system only (not living space)? → MINOR
+- Some nonstructural damage, not displaced? → MINOR
+- Cosmetic only, water below floor system? → AFFECTED
+
+FOR CONVENTIONAL HOMES:
+- Two+ structural components failed? → DESTROYED
+- Water at/above ceiling of essential living space? → DESTROYED
+- Water at/above electrical outlets? → MAJOR
+- Structural damage requiring extensive repairs? → MAJOR
+- ESCALATION: Minor + contamination/long duration/basement mechanical damage? → MAJOR
+- Water below outlets? → MINOR
+- Nonstructural damage (roof covering, drywall, chimney, HVAC)? → MINOR
+- Crawlspace/unfinished basement water only? → AFFECTED
+- Cosmetic damage only? → AFFECTED
+
+STEP 5: TIE-BREAKER
+- If multiple categories apply, use HIGHEST severity
+- If evidence contradictory or insufficient → UNKNOWN
+
+═══════════════════════════════════════════════════════════════════════════════
+WATER LINE REFERENCE HEIGHTS
+═══════════════════════════════════════════════════════════════════════════════
+- Electrical outlets: 12-18 inches
+- Door handle: ~36 inches
+- Window sill: ~30-36 inches
+- Light switch: ~48 inches
 
 RESPOND ONLY WITH VALID JSON matching this schema:
 ${ANALYSIS_SCHEMA}
 
-In your pdaJustification, you MUST explicitly state:
-1. "FLOOD LINE CHECK: [no water line visible / water line below 18 inches / water line at or above 18 inches]"
-2. "Structure assessment: [intact/damaged/breached]"
-3. "Debris location: [yard/street/on structure/through structure]"
-4. "Roof status: [intact/damaged/breached]"
-5. "Wall status: [intact/damaged/collapsed]"
-6. "Final classification reasoning: [explain]"
-
-⚠️ If you see a water line on the siding at or above 18 inches (outlet height), the answer MUST be MAJOR.`,
+In your pdaJustification, include:
+1. "Home Type: [MANUFACTURED/CONVENTIONAL]"
+2. "Incident Type: [FLOOD/NON-FLOOD]"
+3. "Water Line Check: [not detected / below outlets / at or above outlets / at or above ceiling]"
+4. "Structural Assessment: [roof, walls, foundation, frame status]"
+5. "Decision Path: [which rule triggered the classification]"
+6. "Reason Codes: [list applicable codes]"`,
             },
           ],
         },
@@ -290,18 +364,37 @@ In your pdaJustification, you MUST explicitly state:
 
     const parsed = JSON.parse(jsonStr);
 
-    // Validate and construct the analysis object
+    // Validate and construct the analysis object with July 2025 FEMA PDA fields
     const analysis: DamageAnalysis = {
       overallSeverity: validateSeverity(parsed.overallSeverity),
+      incidentType: validateIncidentType(parsed.incidentType),
       summary: parsed.summary || 'Analysis completed',
       structuralAssessment: parsed.structuralAssessment || 'Not assessed',
       debrisAssessment: parsed.debrisAssessment || 'Not assessed',
       pdaJustification: parsed.pdaJustification || 'No justification provided',
       homeType: validateHomeType(parsed.homeType),
+      floodEvidence: parsed.floodEvidence ? {
+        waterLineDetected: Boolean(parsed.floodEvidence.waterLineDetected),
+        waterLineReference: parsed.floodEvidence.waterLineReference || undefined,
+        estimatedHeightInches: parsed.floodEvidence.estimatedHeightInches || undefined,
+        contaminationPresent: Boolean(parsed.floodEvidence.contaminationPresent),
+        longDurationFlooding: Boolean(parsed.floodEvidence.longDurationFlooding),
+        basementMechanicalDamage: Boolean(parsed.floodEvidence.basementMechanicalDamage),
+      } : undefined,
+      structuralIndicators: parsed.structuralIndicators ? {
+        roofDamage: parsed.structuralIndicators.roofDamage || 'none',
+        wallDamage: parsed.structuralIndicators.wallDamage || 'none',
+        foundationStatus: parsed.structuralIndicators.foundationStatus || 'intact',
+        frameCompromised: Boolean(parsed.structuralIndicators.frameCompromised),
+        displacedFromFoundation: Boolean(parsed.structuralIndicators.displacedFromFoundation),
+        structuralComponentsFailedCount: parsed.structuralIndicators.structuralComponentsFailedCount || 0,
+      } : undefined,
       detections: validateDetections(parsed.detections || []),
       recommendations: parsed.recommendations || [],
+      reasonCodes: parsed.reasonCodes || [],
       confidence: Math.min(100, Math.max(0, parsed.confidence || 75)),
       analysisTimestamp: Date.now(),
+      accessBlocked: Boolean(parsed.accessBlocked),
     };
 
     return analysis;
@@ -325,6 +418,14 @@ function validateHomeType(homeType: string): HomeType {
     return homeType as HomeType;
   }
   return HomeType.CONVENTIONAL;
+}
+
+function validateIncidentType(incidentType: string): IncidentType {
+  const valid = Object.values(IncidentType);
+  if (valid.includes(incidentType as IncidentType)) {
+    return incidentType as IncidentType;
+  }
+  return IncidentType.NON_FLOOD;
 }
 
 function validateDebrisType(type: string): DebrisType {
