@@ -21,11 +21,20 @@ export function getApiKeyFromEnv(): string | undefined {
   return import.meta.env.VITE_ANTHROPIC_API_KEY;
 }
 
-const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector. Your job is to provide ACCURATE, CONSERVATIVE damage assessments.
+const SYSTEM_PROMPT = `You are an expert FEMA Preliminary Damage Assessment (PDA) inspector. Your job is to provide ACCURATE damage assessments.
 
-⚠️⚠️⚠️ CRITICAL RULE: DEFAULT TO "AFFECTED" ⚠️⚠️⚠️
-Unless you have UNDENIABLE VISUAL PROOF of structural damage, classify as AFFECTED.
-AFFECTED is the correct classification for 80% of post-disaster images.
+⚠️⚠️⚠️ FIRST - CHECK FOR FLOOD WATER LINE ⚠️⚠️⚠️
+BEFORE doing anything else, scan the SIDING/WALLS of the house for a HORIZONTAL LINE or COLOR CHANGE.
+This line shows how high flood water reached. It appears as:
+- A mud/dirt stain line across the siding
+- A color difference (dirty below, clean above)
+- A horizontal band of discoloration
+
+If you see this line:
+- Line BELOW window sills (under 36") = MINOR
+- Line AT or ABOVE window sills (36"+) = MAJOR
+
+This is NOT optional - flood water lines OVERRIDE the default "AFFECTED" classification.
 
 🛑 STOP AND CHECK: TREE IMAGES
 If you see a fallen tree in the image, ask yourself:
@@ -184,7 +193,12 @@ export async function analyzeImage(base64Image: string): Promise<DamageAnalysis>
               text: `Analyze this disaster damage photograph for FEMA PDA assessment.
 
 🛑 MANDATORY PRE-ASSESSMENT CHECKLIST:
-Before choosing a severity level, you MUST answer these questions:
+Before choosing a severity level, you MUST answer these questions IN ORDER:
+
+Q0: ⚠️ FLOOD CHECK FIRST ⚠️ - Look at the SIDING/EXTERIOR WALLS. Is there a visible HORIZONTAL LINE (water stain, mud line, color change) showing flood water height?
+    - If YES and line is BELOW windows (< 36") → Classification is MINOR
+    - If YES and line is AT or ABOVE windows (≥ 36") → Classification is MAJOR
+    - This OVERRIDES all other considerations!
 
 Q1: Is there a STRUCTURE (house/building) visible in this image?
 Q2: Does the structure's ROOF have any visible HOLES or MISSING SECTIONS?
@@ -207,12 +221,14 @@ RESPOND ONLY WITH VALID JSON matching this schema:
 ${ANALYSIS_SCHEMA}
 
 In your pdaJustification, you MUST explicitly state:
-1. "Structure assessment: [intact/damaged/breached]"
-2. "Debris location: [yard/street/on structure/through structure]"
-3. "Roof status: [intact/damaged/breached]"
-4. "Wall status: [intact/damaged/collapsed]"
-5. "Flood water line: [none/below 36 inches/above 36 inches]" (if flood damage present)
-6. "Why I did NOT choose a higher severity: [reason]"`,
+1. "FLOOD LINE CHECK: [no water line visible / water line at approximately X inches / water line below windows / water line at or above windows]"
+2. "Structure assessment: [intact/damaged/breached]"
+3. "Debris location: [yard/street/on structure/through structure]"
+4. "Roof status: [intact/damaged/breached]"
+5. "Wall status: [intact/damaged/collapsed]"
+6. "Final classification reasoning: [explain]"
+
+⚠️ If you see a water line on the siding at or above window height, the answer MUST be MAJOR.`,
             },
           ],
         },
