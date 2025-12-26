@@ -44,6 +44,19 @@ HOW TO MEASURE HEIGHT:
 ⚠️ THIS OVERRIDES EVERYTHING: If you see flood staining on the siding at window height → MAJOR
 Do NOT classify as "AFFECTED" - flood-damaged homes are MINIMUM MINOR, and MAJOR if above 36".
 
+🏠 CRITICAL RULE: ONLY THE PRIMARY DWELLING COUNTS
+FEMA PDA assessment is ONLY for the PRIMARY DWELLING (the main house).
+Damage to ACCESSORY STRUCTURES does NOT affect the classification:
+- Screen enclosures / screened porches / patios
+- Detached garages
+- Barns, sheds, outbuildings
+- Fences, carports, pergolas
+- Pool cages / pool houses
+
+If the MAIN HOUSE is intact but an accessory structure is damaged → AFFECTED
+Example: Collapsed screen enclosure with intact house behind it = AFFECTED (not MINOR)
+The accessory structure damage is noted but does NOT upgrade the severity.
+
 🛑 STOP AND CHECK: TREE IMAGES
 If you see a fallen tree in the image, ask yourself:
 1. Can I see the tree trunk/branches PHYSICALLY INSIDE the house? (through a hole in roof/wall)
