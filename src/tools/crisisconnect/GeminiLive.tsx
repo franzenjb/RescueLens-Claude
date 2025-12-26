@@ -514,7 +514,7 @@ export const GeminiLive: React.FC = () => {
           setup: {
             model: MODEL,
             generationConfig: {
-              responseModalities: ['AUDIO'],
+              responseModalities: ['AUDIO', 'TEXT'], // Include TEXT for transcript capture
               speechConfig: {
                 voiceConfig: {
                   prebuiltVoiceConfig: {
