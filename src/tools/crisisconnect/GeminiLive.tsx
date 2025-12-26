@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Phone, PhoneOff, Volume2, Loader2, AlertCircle, Globe, Database, Download, X } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Volume2, Loader2, AlertCircle, Globe, Database, Download, X, Brain, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { getLessonsForPrompt, evaluateTranscript, saveLessons, loadLessons, clearLessons, CriticEvaluation, exportLessonsMarkdown } from '../../services/criticService';
+import { saveTranscript, getTranscriptStats, getAllTranscripts, StoredTranscript } from '../../services/transcriptStorage';
 
 // Gemini API Key - for demo purposes
 // Production should use ephemeral tokens: https://ai.google.dev/gemini-api/docs/ephemeral-tokens
@@ -413,6 +415,14 @@ export const GeminiLive: React.FC = () => {
   const [showDataPanel, setShowDataPanel] = useState(false);
   const [callerData, setCallerData] = useState<CallerData | null>(null);
 
+  // Self-Improving Feedback Loop State
+  const [showCriticPanel, setShowCriticPanel] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [lastEvaluation, setLastEvaluation] = useState<CriticEvaluation | null>(null);
+  const [lessonsCount, setLessonsCount] = useState(0);
+  const [transcriptStats, setTranscriptStats] = useState<{ total: number; evaluated: number; averageScore: number } | null>(null);
+  const [injectedLessons, setInjectedLessons] = useState('');
+
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -433,6 +443,17 @@ export const GeminiLive: React.FC = () => {
     };
   }, []);
 
+  // Load lessons count and stats on mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      const lessons = await loadLessons();
+      setLessonsCount(lessons.length);
+      const stats = await getTranscriptStats();
+      setTranscriptStats(stats);
+    };
+    loadInitialData();
+  }, []);
+
   const connect = useCallback(async () => {
     if (!GEMINI_API_KEY) {
       setError('Gemini API key not configured. Set VITE_GEMINI_API_KEY in environment.');
@@ -442,6 +463,13 @@ export const GeminiLive: React.FC = () => {
     setIsConnecting(true);
     setError(null);
     setMessages([]);
+    setLastEvaluation(null);
+
+    // SELF-IMPROVING LOOP: Load lessons and inject into prompt
+    const lessonsText = await getLessonsForPrompt();
+    setInjectedLessons(lessonsText);
+    const enhancedPrompt = lessonsText ? `${SYSTEM_PROMPT}\n\n${lessonsText}` : SYSTEM_PROMPT;
+    console.log(`[Self-Improving] Injecting ${(await loadLessons()).length} lessons into prompt`);
 
     // Initialize call data capture
     setCallerData({
@@ -478,7 +506,7 @@ export const GeminiLive: React.FC = () => {
               }
             },
             systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT }]
+              parts: [{ text: enhancedPrompt }]
             },
             tools: []
           }
@@ -575,7 +603,7 @@ export const GeminiLive: React.FC = () => {
     }
   }, [currentTranscript]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     stopMicrophone();
 
     if (wsRef.current) {
@@ -589,17 +617,33 @@ export const GeminiLive: React.FC = () => {
     }
 
     // Finalize call data
-    setCallerData(prev => prev ? {
-      ...prev,
+    const finalCallerData = callerData ? {
+      ...callerData,
       endTime: new Date(),
       transcript: messages
-    } : null);
+    } : null;
+
+    setCallerData(finalCallerData);
+
+    // SELF-IMPROVING LOOP: Save transcript for later evaluation
+    if (finalCallerData && messages.length > 0) {
+      try {
+        await saveTranscript(finalCallerData.callId, messages, finalCallerData);
+        console.log(`[Self-Improving] Transcript saved: ${finalCallerData.callId}`);
+
+        // Refresh stats
+        const stats = await getTranscriptStats();
+        setTranscriptStats(stats);
+      } catch (err) {
+        console.error('Failed to save transcript:', err);
+      }
+    }
 
     setIsConnected(false);
     setIsMicActive(false);
     setIsModelSpeaking(false);
     audioQueueRef.current = [];
-  }, [messages]);
+  }, [messages, callerData]);
 
   const startMicrophone = async () => {
     try {
@@ -749,6 +793,68 @@ export const GeminiLive: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // SELF-IMPROVING LOOP: Run the Critic evaluation
+  const runCriticEvaluation = async () => {
+    if (!callerData || messages.length === 0) {
+      setError('No call data to evaluate. Complete a call first.');
+      return;
+    }
+
+    // Get Claude API key from settings
+    const settings = localStorage.getItem('settings');
+    const apiKey = settings ? JSON.parse(settings)?.apiKey : null;
+
+    if (!apiKey) {
+      setError('Claude API key required for Critic evaluation. Set it in Settings.');
+      return;
+    }
+
+    setIsEvaluating(true);
+    setError(null);
+
+    try {
+      console.log(`[Self-Improving] Running Critic evaluation for ${callerData.callId}...`);
+
+      const evaluation = await evaluateTranscript(callerData.callId, messages, apiKey);
+      setLastEvaluation(evaluation);
+
+      // Save new lessons
+      if (evaluation.newLessons.length > 0) {
+        await saveLessons(evaluation.newLessons);
+        const lessons = await loadLessons();
+        setLessonsCount(lessons.length);
+        console.log(`[Self-Improving] Added ${evaluation.newLessons.length} new lessons`);
+      }
+
+      // Refresh stats
+      const stats = await getTranscriptStats();
+      setTranscriptStats(stats);
+
+      // Show the Critic panel
+      setShowCriticPanel(true);
+
+    } catch (err) {
+      console.error('Critic evaluation failed:', err);
+      setError(err instanceof Error ? err.message : 'Evaluation failed');
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  // Clear all lessons (for testing)
+  const handleClearLessons = async () => {
+    if (confirm('Clear all learned lessons? This cannot be undone.')) {
+      clearLessons();
+      setLessonsCount(0);
+      setLastEvaluation(null);
+    }
+  };
+
+  // Export lessons markdown
+  const handleExportLessons = async () => {
+    await exportLessonsMarkdown();
+  };
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 to-slate-900">
       {/* Header */}
@@ -767,6 +873,18 @@ export const GeminiLive: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Self-Improving Loop Indicator */}
+            <button
+              onClick={() => setShowCriticPanel(!showCriticPanel)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
+                showCriticPanel ? 'bg-purple-500/30 text-purple-300' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+              title={`Self-Improving Loop: ${lessonsCount} lessons learned`}
+            >
+              <Brain className="w-4 h-4" />
+              <span className="text-sm font-medium">{lessonsCount}</span>
+            </button>
+
             {/* Data Panel Button */}
             {callerData && (
               <button
@@ -1072,6 +1190,234 @@ export const GeminiLive: React.FC = () => {
               {/* Integration Note */}
               <div className="text-xs text-slate-600 text-center pt-2">
                 Data can be sent to ArcGIS, Google Maps, or custom dashboards
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Critic Panel Overlay - Self-Improving Feedback Loop */}
+      {showCriticPanel && (
+        <div className="absolute inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="flex-1 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowCriticPanel(false)}
+          />
+          {/* Panel */}
+          <div className="w-[450px] bg-slate-900 border-l border-purple-700/50 overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-900 to-purple-800 p-4 border-b border-purple-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-white font-bold flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-purple-300" />
+                  Self-Improving Loop
+                </h3>
+                <button
+                  onClick={() => setShowCriticPanel(false)}
+                  className="p-1 hover:bg-purple-700 rounded"
+                >
+                  <X className="w-5 h-5 text-purple-300" />
+                </button>
+              </div>
+              <p className="text-purple-200 text-xs mt-1">
+                Critic Agent evaluates calls and teaches the bot
+              </p>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Stats Overview */}
+              <div className="bg-slate-800 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-slate-400 mb-3">Learning Progress</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-400">{lessonsCount}</div>
+                    <div className="text-xs text-slate-500">Lessons Learned</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-400">{transcriptStats?.total || 0}</div>
+                    <div className="text-xs text-slate-500">Calls Stored</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400">{transcriptStats?.averageScore || '--'}</div>
+                    <div className="text-xs text-slate-500">Avg Score</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Evaluate Button */}
+              <div className="bg-purple-900/30 border border-purple-700/50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-purple-300 mb-2">Run Critic Evaluation</h4>
+                <p className="text-xs text-purple-400/70 mb-3">
+                  Analyze the most recent call against the Gold Standard Rubric. The Critic will identify errors and generate lessons.
+                </p>
+                <button
+                  onClick={runCriticEvaluation}
+                  disabled={isEvaluating || !callerData || messages.length === 0}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
+                    isEvaluating
+                      ? 'bg-purple-700 text-purple-300 cursor-wait'
+                      : !callerData || messages.length === 0
+                      ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-500 text-white'
+                  }`}
+                >
+                  {isEvaluating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Analyzing Call...
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="w-5 h-5" />
+                      Evaluate Last Call
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Last Evaluation Results */}
+              {lastEvaluation && (
+                <div className="bg-slate-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-slate-400">Last Evaluation</h4>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      lastEvaluation.overallScore >= 80 ? 'bg-green-500/20 text-green-400' :
+                      lastEvaluation.overallScore >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      Score: {lastEvaluation.overallScore}/100
+                    </span>
+                  </div>
+
+                  {/* Summary */}
+                  <p className="text-sm text-slate-300 mb-3">{lastEvaluation.summary}</p>
+
+                  {/* Rubric Scores */}
+                  <div className="space-y-2 mb-4">
+                    {lastEvaluation.rubricScores.map((score, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        {score.passed ? (
+                          <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                        )}
+                        <span className="text-xs text-slate-400 flex-1">{score.category}</span>
+                        <span className={`text-xs font-medium ${score.passed ? 'text-green-400' : 'text-red-400'}`}>
+                          {score.score}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Errors Found */}
+                  {lastEvaluation.errors.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="text-xs font-medium text-red-400 mb-2">Errors Found ({lastEvaluation.errors.length})</h5>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {lastEvaluation.errors.map((error, idx) => (
+                          <div key={idx} className="bg-red-900/20 border border-red-700/30 rounded p-2 text-xs">
+                            <div className="flex items-center gap-1 text-red-300 mb-1">
+                              <span className={`px-1 rounded text-[10px] ${
+                                error.severity === 'critical' ? 'bg-red-600' :
+                                error.severity === 'major' ? 'bg-orange-600' : 'bg-yellow-600'
+                              }`}>
+                                {error.severity.toUpperCase()}
+                              </span>
+                              <span>{error.category}</span>
+                            </div>
+                            <p className="text-slate-400 italic mb-1">"{error.quotedLine}"</p>
+                            <p className="text-slate-300">{error.explanation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New Lessons */}
+                  {lastEvaluation.newLessons.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-medium text-purple-400 mb-2">New Lessons Added ({lastEvaluation.newLessons.length})</h5>
+                      <div className="space-y-1">
+                        {lastEvaluation.newLessons.map((lesson, idx) => (
+                          <div key={idx} className="bg-purple-900/20 border border-purple-700/30 rounded p-2 text-xs text-purple-300">
+                            {lesson}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Strengths */}
+                  {lastEvaluation.strengths.length > 0 && (
+                    <div className="mt-3">
+                      <h5 className="text-xs font-medium text-green-400 mb-2">Strengths</h5>
+                      <ul className="text-xs text-slate-400 space-y-1">
+                        {lastEvaluation.strengths.map((strength, idx) => (
+                          <li key={idx} className="flex items-start gap-1">
+                            <CheckCircle className="w-3 h-3 text-green-400 mt-0.5 flex-shrink-0" />
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Injected Lessons Preview */}
+              {injectedLessons && (
+                <div className="bg-slate-800 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-400 mb-2">Active Lessons (Injected into Prompt)</h4>
+                  <div className="text-xs text-slate-500 bg-slate-900 rounded p-2 max-h-32 overflow-y-auto font-mono">
+                    <pre className="whitespace-pre-wrap">{injectedLessons.slice(0, 500)}{injectedLessons.length > 500 ? '...' : ''}</pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportLessons}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Lessons
+                </button>
+                <button
+                  onClick={handleClearLessons}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-red-900/50 hover:bg-red-800/50 text-red-300 rounded-lg text-sm transition-colors"
+                  title="Clear all lessons"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset
+                </button>
+              </div>
+
+              {/* How It Works */}
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                <h4 className="text-sm font-medium text-slate-400 mb-2">How Self-Improvement Works</h4>
+                <ol className="text-xs text-slate-500 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
+                    <span>Voice bot handles a disaster call</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
+                    <span>Critic AI reviews transcript against FEMA rubric</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
+                    <span>Errors become "lessons learned" (saved rules)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
+                    <span>Next call: lessons are injected into the system prompt</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="bg-purple-600 text-white rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px]">5</span>
+                    <span>Bot learns from mistakes and improves over time!</span>
+                  </li>
+                </ol>
               </div>
             </div>
           </div>
